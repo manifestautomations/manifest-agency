@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 4 of 7 (Trust Guardrails)
-Plan: 2 of 5
+Plan: 3 of 5
 Status: In progress
-Last activity: 2026-01-28 — Completed 04-02-PLAN.md (Audit Infrastructure)
+Last activity: 2026-01-28 — Completed 04-03-PLAN.md (Validator Library)
 
-Progress: [█████░░░░░] 56%
+Progress: [█████░░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: 4 min
-- Total execution time: 0.98 hours
+- Total execution time: 1.06 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [█████░░░░░] 56%
 | 01-foundation | 3 | 6min | 2min |
 | 02-github-coordination | 5 | 20min | 4min |
 | 03-single-worker | 4 | 24min | 6min |
-| 04-trust-guardrails | 2 | 9min | 4.5min |
+| 04-trust-guardrails | 3 | 14min | 4.7min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (4min), 03-03 (2min), 03-04 (15min), 04-01 (3min), 04-02 (6min)
+- Last 5 plans: 03-03 (2min), 03-04 (15min), 04-01 (3min), 04-02 (6min), 04-03 (5min)
 - Trend: Infrastructure tasks average 4-6min, documentation heavier tasks 10-15min
 
 *Updated after each plan completion*
@@ -137,6 +137,13 @@ Recent decisions affecting current work:
 - JSONL format (single-line JSON) for append-only operations
 - Audit logs ignored in git, chain.json tracked for team verification
 
+**From 04-03 (Validator Library):**
+- Bash regex doesn't support \s - convert to [[:space:]] for pattern matching
+- Secure glob-to-regex requires explicit literal handling for / and leading dots
+- Trust scores tracked in git (team visibility), violation logs ignored (forensics only)
+- Deny patterns checked before allow patterns (deny always wins)
+- Safety floor patterns ALWAYS block regardless of trust level (11 critical patterns)
+
 ### Pending Todos
 
 None yet.
@@ -147,6 +154,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-28T04:45:43Z
-Stopped at: Completed 04-02-PLAN.md (Audit Infrastructure)
+Last session: 2026-01-28T04:54:00Z
+Stopped at: Completed 04-03-PLAN.md (Validator Library)
 Resume file: None
