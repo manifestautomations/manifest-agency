@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 5 of 7 (Orchestration)
-Plan: Ready to plan
-Status: Ready to plan
-Last activity: 2026-01-28 — Phase 4 (Trust Guardrails) complete and verified
+Plan: 2 of 5 complete
+Status: In progress
+Last activity: 2026-01-28 — Completed 05-02-PLAN.md (Orchestrator Helpers)
 
-Progress: [██████░░░░] 68%
+Progress: [███████░░░] 76%
 
 ## Performance Metrics
 
@@ -158,6 +158,19 @@ Recent decisions affecting current work:
 - Guardrails enabled by default (enabled: true in config)
 - Default trust level 2 (safe write) for new agents
 
+**From 05-01 (Gemini Orchestrator Skill):**
+- Orchestrator skill location: .gemini/skills/orchestrate.md
+- Instructional skill pattern (describes HOW, does not execute)
+- Intent classification: DISPATCH, STATUS, DECISION, CORRECTION, CONVERSATION
+- Confirmation gate before all dispatch operations
+
+**From 05-02 (Orchestrator Helpers):**
+- Vertical slice prompts include Foundation+Features pattern guidance
+- Dependency format 'Blocked by #N' matches CONTEXT.md convention
+- tsort exit code for cycle detection (POSIX standard)
+- jq scan() for case-insensitive pattern extraction from issue bodies
+- Orchestrator helpers in scripts/orchestrator/ directory
+
 ### Pending Todos
 
 None yet.
@@ -168,6 +181,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-28T05:15:00Z
-Stopped at: Phase 4 (Trust Guardrails) complete and verified - ready for Phase 5
+Last session: 2026-01-28T13:38:34Z
+Stopped at: Completed 05-02-PLAN.md (Orchestrator Helpers)
 Resume file: None
