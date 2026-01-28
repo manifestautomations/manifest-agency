@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Establish repository structure, agent manifests, and worktree management
 - [x] **Phase 2: GitHub Coordination** - Configure GitHub as single source of truth for all work tracking
 - [x] **Phase 3: Single Worker** - Validate one Claude worker can execute and report via GSD
-- [ ] **Phase 4: Trust Guardrails** - Implement hook-based trust enforcement and audit logging
+- [x] **Phase 4: Trust Guardrails** - Implement hook-based trust enforcement and audit logging
 - [ ] **Phase 5: Orchestration** - Add Gemini orchestrator to dispatch work and aggregate status
 - [ ] **Phase 6: Worker Parallelization** - Enable workers to spawn sub-agents for parallel execution
 - [ ] **Phase 7: CEO Interface** - Complete loop with Mission Control integration and daily briefings
@@ -82,14 +82,14 @@ Plans:
   1. Pre-hooks block destructive commands and validate scope before execution
   2. Post-hooks validate outputs and log all actions to audit trail
   3. Agent manifests define scope boundaries that are enforced at execution time
-**Plans**: 5 plans in 3 waves
+**Plans**: 5 plans in 4 waves
 
 Plans:
-- [ ] 04-01-PLAN.md - Trust guardrail YAML configuration and yq installation (TRUST-01)
-- [ ] 04-02-PLAN.md - Audit chain infrastructure with hash chaining (TRUST-02)
-- [ ] 04-03-PLAN.md - Validator library with command and scope validation (TRUST-01, TRUST-03)
-- [ ] 04-04-PLAN.md - Hooks library with pre/post execution wrapper (TRUST-01, TRUST-02)
-- [ ] 04-05-PLAN.md - Worker integration and documentation (TRUST-01, TRUST-02, TRUST-03)
+- [x] 04-01-PLAN.md - Trust guardrail YAML configuration and yq installation (TRUST-01)
+- [x] 04-02-PLAN.md - Audit chain infrastructure with hash chaining (TRUST-02)
+- [x] 04-03-PLAN.md - Validator library with command and scope validation (TRUST-01, TRUST-03)
+- [x] 04-04-PLAN.md - Hooks library with pre/post execution wrapper (TRUST-01, TRUST-02)
+- [x] 04-05-PLAN.md - Worker integration and documentation (TRUST-01, TRUST-02, TRUST-03)
 
 ### Phase 5: Orchestration
 **Goal**: Gemini orchestrator can decompose CEO intent, dispatch to workers, and aggregate status
@@ -143,7 +143,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Foundation | 3/3 | Complete | 2026-01-27 |
 | 2. GitHub Coordination | 5/5 | Complete | 2026-01-27 |
 | 3. Single Worker | 4/4 | Complete | 2026-01-27 |
-| 4. Trust Guardrails | 0/5 | Planned | - |
+| 4. Trust Guardrails | 5/5 | Complete | 2026-01-28 |
 | 5. Orchestration | 0/TBD | Not started | - |
 | 6. Worker Parallelization | 0/TBD | Not started | - |
 | 7. CEO Interface | 0/TBD | Not started | - |

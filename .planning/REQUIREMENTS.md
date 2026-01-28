@@ -38,9 +38,9 @@
 
 ### Trust & Guardrails
 
-- [ ] **TRUST-01**: Pre-hooks enforce command sanitization (block destructive operations, validate scope)
-- [ ] **TRUST-02**: Post-hooks validate outputs and log actions for audit trail
-- [ ] **TRUST-03**: Basic access control — agents have defined scope boundaries per manifest
+- [x] **TRUST-01**: Pre-hooks enforce command sanitization (block destructive operations, validate scope)
+- [x] **TRUST-02**: Post-hooks validate outputs and log actions for audit trail
+- [x] **TRUST-03**: Basic access control — agents have defined scope boundaries per manifest
 
 ### Observability
 
@@ -104,14 +104,14 @@
 | GH-02 | Phase 2 | Complete |
 | GH-03 | Phase 2 | Complete |
 | GH-04 | Phase 2 | Complete |
-| WORK-01 | Phase 3 | Pending |
-| WORK-02 | Phase 3 | Pending |
-| WORK-04 | Phase 3 | Pending |
-| OBS-01 | Phase 3 | Pending |
-| OBS-02 | Phase 3 | Pending |
-| TRUST-01 | Phase 4 | Pending |
-| TRUST-02 | Phase 4 | Pending |
-| TRUST-03 | Phase 4 | Pending |
+| WORK-01 | Phase 3 | Complete |
+| WORK-02 | Phase 3 | Complete |
+| WORK-04 | Phase 3 | Complete |
+| OBS-01 | Phase 3 | Complete |
+| OBS-02 | Phase 3 | Complete |
+| TRUST-01 | Phase 4 | Complete |
+| TRUST-02 | Phase 4 | Complete |
+| TRUST-03 | Phase 4 | Complete |
 | ORCH-01 | Phase 5 | Pending |
 | ORCH-02 | Phase 5 | Pending |
 | ORCH-03 | Phase 5 | Pending |
@@ -124,4 +124,4 @@
 
 ---
 
-*Last updated: 2026-01-27*
+*Last updated: 2026-01-28*
