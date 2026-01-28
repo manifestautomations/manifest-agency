@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 5 of 7 (Orchestration)
-Plan: 2 of 5 complete
+Plan: 4 of 5 complete
 Status: In progress
-Last activity: 2026-01-28 — Completed 05-02-PLAN.md (Orchestrator Helpers)
+Last activity: 2026-01-28 — Completed 05-04-PLAN.md (Status Aggregation)
 
-Progress: [███████░░░] 76%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -171,6 +171,13 @@ Recent decisions affecting current work:
 - jq scan() for case-insensitive pattern extraction from issue bodies
 - Orchestrator helpers in scripts/orchestrator/ directory
 
+**From 05-04 (Status Aggregation):**
+- Tiered output formats: oneliner (quick count), table (progress view), detailed (full JSON)
+- Text-based icons for Windows compatibility: [OK], [..], [??], [XX], [--]
+- Cascade detection via 'Blocked by #N' pattern matching in issue bodies
+- Transitive cascade analysis (issues blocked by blocked issues)
+- Scope filtering: active (worker-labeled only), phase (open issues), all
+
 ### Pending Todos
 
 None yet.
@@ -181,6 +188,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-28T13:38:34Z
-Stopped at: Completed 05-02-PLAN.md (Orchestrator Helpers)
+Last session: 2026-01-28T13:41:37Z
+Stopped at: Completed 05-04-PLAN.md (Status Aggregation)
 Resume file: None
