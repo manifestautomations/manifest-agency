@@ -26,6 +26,9 @@ SCRIPTS_DIR="$REPO_ROOT/scripts"
 source "$LIB_DIR/logger.sh"
 source "$LIB_DIR/lock.sh"
 source "$LIB_DIR/parser.sh"
+source "$LIB_DIR/audit.sh"
+source "$LIB_DIR/validator.sh"
+source "$LIB_DIR/hooks.sh"
 
 # --- Parse arguments ---
 ISSUE_NUMBER=""
@@ -110,6 +113,20 @@ echo ""
 # Initialize logging
 init_logging "$ISSUE_NUMBER"
 log_event "worker_start" --arg issue "$ISSUE_NUMBER" --arg force "$FORCE_LOCK"
+
+# Initialize audit chain
+init_audit_chain
+
+# Load guardrail configuration
+GUARDRAILS_ENABLED=$(jq -r '.guardrails.enabled // true' "$WORKER_DIR/config.json")
+DEFAULT_TRUST_LEVEL=$(jq -r '.guardrails.default_trust_level // 2' "$WORKER_DIR/config.json")
+AGENT_NAME="${AGENT_NAME:-claude-worker}"
+
+# Audit: Log worker start
+log_audit_event "worker_start" \
+  --arg agent "$AGENT_NAME" \
+  --arg issue "$ISSUE_NUMBER" \
+  --arg force "$FORCE_LOCK"
 
 # Acquire lock
 if ! acquire_lock "$ISSUE_NUMBER" "$FORCE_LOCK"; then
@@ -288,6 +305,12 @@ echo ""
 echo "[worker] Starting execution..."
 log_event "execution_start" --arg timestamp "$START_TIME"
 
+# Audit: Log execution start
+log_audit_event "execution_start" \
+  --arg agent "$AGENT_NAME" \
+  --arg issue "$ISSUE_NUMBER" \
+  --arg timestamp "$START_TIME"
+
 # Re-parse issue to get current data
 parse_issue_body "$ISSUE_NUMBER"
 
@@ -395,6 +418,10 @@ git commit -m "$COMMIT_MSG" 2>/dev/null || true
 echo "[worker] Pushing branch..."
 git push -u origin "$BRANCH_NAME" 2>&1 || {
   echo "[error] Failed to push branch"
+  log_audit_event "execution_failed" \
+    --arg agent "$AGENT_NAME" \
+    --arg issue "$ISSUE_NUMBER" \
+    --arg reason "push_failed"
   release_lock
   log_session_end "push_failed" "1"
   exit 1
@@ -431,6 +458,10 @@ Closes #${ISSUE_NUMBER}" \
   --head "$BRANCH_NAME" \
   --base "main" 2>&1) || {
   echo "[error] Failed to create PR"
+  log_audit_event "execution_failed" \
+    --arg agent "$AGENT_NAME" \
+    --arg issue "$ISSUE_NUMBER" \
+    --arg reason "pr_failed"
   release_lock
   log_session_end "pr_failed" "1"
   exit 1
@@ -490,6 +521,13 @@ echo "  PR: $PR_URL"
 echo "  Duration: $DURATION"
 
 log_event "execution_complete" \
+  --arg pr_number "$PR_NUMBER" \
+  --arg duration "$DURATION"
+
+# Audit: Log execution complete
+log_audit_event "execution_complete" \
+  --arg agent "$AGENT_NAME" \
+  --arg issue "$ISSUE_NUMBER" \
   --arg pr_number "$PR_NUMBER" \
   --arg duration "$DURATION"
 

@@ -4,5 +4,17 @@
   "github_api_retry_attempts": 3,
   "github_api_retry_delay_seconds": 2,
   "rate_limit_max_wait_seconds": 300,
-  "warning_threshold_percent": 80
+  "warning_threshold_percent": 80,
+  "guardrails": {
+    "enabled": true,
+    "default_trust_level": 2,
+    "confirmation_timeout_seconds": 30,
+    "violation_thresholds": {
+      "warning": 20,
+      "probation": 40,
+      "demotion": 60
+    },
+    "decay_rate": 5,
+    "audit_retention_days": 90
+  }
 }
