@@ -100,10 +100,15 @@ Plans:
   2. Orchestrator dispatches work to Claude via cross-surface terminal control (claude-code CLI)
   3. Model selection follows agent manifests (Flash/Pro/Deep Think)
   4. Orchestrator aggregates worker status and reports results
-**Plans**: TBD
+**Plans**: 6 plans in 3 waves
 
 Plans:
-- [ ] 05-01: TBD during plan-phase
+- [ ] 05-01-PLAN.md - Gemini skill skeleton, intent classification, issue template (ORCH-02)
+- [ ] 05-02-PLAN.md - Task decomposition and dependency graph helpers (ORCH-02)
+- [ ] 05-03-PLAN.md - Worker dispatch with dependency-aware parallel execution (ORCH-01, ORCH-03)
+- [ ] 05-04-PLAN.md - Status aggregation with tiered output formats (ORCH-04)
+- [ ] 05-05-PLAN.md - Complete Gemini skill and documentation (ORCH-01, ORCH-04)
+- [ ] 05-06-PLAN.md - End-to-end verification checkpoint
 
 ### Phase 6: Worker Parallelization
 **Goal**: Workers can spawn sub-agents to parallelize independent subtasks
@@ -144,6 +149,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. GitHub Coordination | 5/5 | Complete | 2026-01-27 |
 | 3. Single Worker | 4/4 | Complete | 2026-01-27 |
 | 4. Trust Guardrails | 5/5 | Complete | 2026-01-28 |
-| 5. Orchestration | 0/TBD | Not started | - |
+| 5. Orchestration | 0/6 | Not started | - |
 | 6. Worker Parallelization | 0/TBD | Not started | - |
 | 7. CEO Interface | 0/TBD | Not started | - |
