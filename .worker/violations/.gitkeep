@@ -1,0 +1,4 @@
+# This directory holds trust violation tracking
+# - trust-scores.json: Current violation points per agent (tracked in git)
+# - {agent}-violations.jsonl: Violation history per agent (git ignored)
+# - incident-{id}.json: Critical violation snapshots (git ignored)

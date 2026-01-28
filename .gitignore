@@ -14,3 +14,9 @@
 .worker/audit/*.jsonl.gz
 !.worker/audit/.gitkeep
 !.worker/audit/chain.json
+
+# Violations tracking (trust-scores.json is tracked for team visibility)
+.worker/violations/*-violations.jsonl
+.worker/violations/incident-*.json
+!.worker/violations/.gitkeep
+!.worker/violations/trust-scores.json
