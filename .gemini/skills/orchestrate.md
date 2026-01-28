@@ -16,7 +16,220 @@ Core workflow:
 
 ---
 
-## Intent Classification
+## Function Calling Definitions
+
+These functions define the structured operations available to the orchestrator. Each maps to terminal commands for execution.
+
+### create_github_issues
+
+Creates GitHub issues from decomposed tasks.
+
+**Parameters:**
+```json
+{
+  "issues": {
+    "type": "array",
+    "description": "Array of issues to create",
+    "items": {
+      "title": "string - Brief, actionable issue title",
+      "summary": "string - 1-3 sentences describing what needs to be done",
+      "acceptance": "array of strings - Testable acceptance criteria",
+      "depends_on": "array of numbers - Issue numbers this depends on",
+      "complexity": "string - S (1-2h) or M (2-4h)"
+    }
+  }
+}
+```
+
+**Returns:**
+```json
+{
+  "created_issues": [
+    {"number": 42, "title": "Foundation - Theme system", "url": "https://..."},
+    {"number": 43, "title": "Dark mode for dashboard", "url": "https://..."}
+  ]
+}
+```
+
+**Terminal execution:**
+```bash
+# Generate issue body from decomposition
+scripts/orchestrator/decompose.sh format '$JSON' > issues.json
+
+# Create each issue
+gh issue create --title "TITLE" --body "$(cat issue-body.md)"
+```
+
+---
+
+### dispatch_workers
+
+Starts Claude workers for ready issues (no blocking dependencies).
+
+**Parameters:**
+```json
+{
+  "issue_numbers": {
+    "type": "array",
+    "items": "number",
+    "description": "Issue numbers to dispatch workers for"
+  },
+  "mode": {
+    "type": "string",
+    "enum": ["single", "parallel", "dependencies"],
+    "description": "Dispatch mode (default: parallel)"
+  },
+  "max_concurrent": {
+    "type": "number",
+    "description": "Maximum concurrent workers (default: 3)"
+  }
+}
+```
+
+**Returns:**
+```json
+{
+  "dispatched": [
+    {"number": 42, "pid": 12345},
+    {"number": 43, "pid": 12346}
+  ],
+  "blocked": [
+    {"number": 44, "blocked_by": [42, 43]}
+  ],
+  "errors": []
+}
+```
+
+**Terminal execution:**
+```bash
+# Single issue
+scripts/orchestrator/dispatch.sh --issue 42
+
+# Multiple issues in parallel
+scripts/orchestrator/dispatch.sh --issues "42 43 44" --max-concurrent 3
+
+# Full dependency-aware dispatch
+scripts/orchestrator/dispatch.sh --with-dependencies
+```
+
+---
+
+### query_worker_status
+
+Gets current status of workers.
+
+**Parameters:**
+```json
+{
+  "scope": {
+    "type": "string",
+    "enum": ["active", "phase", "all"],
+    "description": "Query scope (default: active)"
+  },
+  "format": {
+    "type": "string",
+    "enum": ["oneliner", "table", "detailed"],
+    "description": "Output format (default: table)"
+  }
+}
+```
+
+**Returns:**
+- `oneliner`: "3 executing, 2 awaiting approval, 1 blocked"
+- `table`: Status table with icons and issue titles
+- `detailed`: Full JSON with metadata
+
+**Terminal execution:**
+```bash
+# Quick summary
+scripts/orchestrator/aggregate.sh --format oneliner
+
+# Progress table
+scripts/orchestrator/aggregate.sh --format table --scope active
+
+# Full JSON details
+scripts/orchestrator/aggregate.sh --format detailed --scope all
+```
+
+---
+
+### cancel_worker
+
+Stops a running worker.
+
+**Parameters:**
+```json
+{
+  "issue_number": {
+    "type": "number",
+    "description": "Issue number of worker to stop"
+  },
+  "reason": {
+    "type": "string",
+    "description": "Reason for cancellation (for audit)"
+  }
+}
+```
+
+**Returns:**
+```json
+{
+  "cancelled": true,
+  "issue": 42,
+  "previous_state": "executing"
+}
+```
+
+**Terminal execution:**
+```bash
+# Kill worker process and update label
+# Note: dispatch.sh with --force handles this via trap
+scripts/orchestrator/dispatch.sh --issue 42 --force
+gh issue edit 42 --remove-label "worker:executing" --add-label "worker:failed"
+gh issue comment 42 --body "Worker cancelled by orchestrator: $REASON"
+```
+
+---
+
+### retry_issue
+
+Re-attempts a failed issue.
+
+**Parameters:**
+```json
+{
+  "issue_number": {
+    "type": "number",
+    "description": "Issue number to retry"
+  },
+  "force": {
+    "type": "boolean",
+    "description": "Force retry even with stale lock (default: false)"
+  }
+}
+```
+
+**Returns:**
+```json
+{
+  "retried": true,
+  "issue": 42,
+  "new_pid": 12345
+}
+```
+
+**Terminal execution:**
+```bash
+# Remove failed label
+gh issue edit 42 --remove-label "worker:failed"
+
+# Retry with optional force flag
+scripts/worker/execute.sh --issue 42 --force
+```
+
+---
+
+## Workflow: Intent Classification
 
 Before taking action, classify the CEO's input to determine response mode.
 
@@ -37,17 +250,38 @@ Before taking action, classify the CEO's input to determine response mode.
 | CORRECTION | CEO wants to stop/modify work | Halt or adjust workflow |
 | CONVERSATION | Ambiguous or clarification needed | Ask clarifying questions |
 
-### Classification Examples
+### Classification Patterns
 
-- "Build the login page" -> DISPATCH
-- "What's the status?" -> STATUS
-- "The blocked items need attention" -> DECISION
-- "Stop that work" -> CORRECTION
-- "Tell me about the project" -> CONVERSATION
+**DISPATCH triggers:**
+- Action words: build, implement, create, add, fix, update, deploy, ship, make, configure
+- Example: "Build the login page" -> DISPATCH
+
+**STATUS triggers:**
+- Query words: status, progress, what's, how's, show, list, report, where, which
+- Example: "What's the status?" -> STATUS
+
+**DECISION triggers:**
+- Decision references: blocked, waiting, decide, approve, review, choose, pick, select
+- Example: "The blocked items need attention" -> DECISION
+
+**CORRECTION triggers:**
+- Stop/pause words: stop, pause, cancel, abort, halt, hold, delay, postpone
+- Example: "Stop that work" -> CORRECTION
+
+**CONVERSATION triggers:**
+- None of the above patterns match
+- Example: "Tell me about the project" -> CONVERSATION
+
+### Handling Ambiguous Intent
+
+When classification returns CONVERSATION:
+1. Ask clarifying questions before proceeding
+2. Confirm understanding before creating issues
+3. Never assume - always verify with CEO
 
 ---
 
-## Decomposition Workflow
+## Workflow: Task Decomposition
 
 When intent is DISPATCH, break CEO vision into actionable GitHub issues.
 
@@ -62,131 +296,342 @@ When intent is DISPATCH, break CEO vision into actionable GitHub issues.
    - If intent matches a planned phase, suggest using GSD command instead
    - Query open issues to avoid duplication
 
-3. **Apply vertical slicing:**
+3. **Generate decomposition prompt:**
+   ```bash
+   scripts/orchestrator/decompose.sh prompt "CEO INTENT"
+   ```
+
+4. **Apply vertical slicing:**
    - Prefer end-to-end features over horizontal layers
    - Target S/M sizing (1-4 hours per issue)
    - First issue is "Foundation" if new infrastructure needed
    - Each issue should be independently shippable
 
-4. **Define dependencies:**
+5. **Define dependencies:**
    - Foundation issues have no dependencies
    - Feature issues depend on foundation
    - Use "Blocked by #N" format in issue body
 
-5. **Present decomposition:**
-   - Show CEO the planned issues before creating
-   - Include: title, summary, acceptance criteria, dependencies
-   - Await CEO approval before proceeding
+6. **Validate decomposition:**
+   ```bash
+   scripts/orchestrator/decompose.sh validate '$JSON'
+   ```
 
-### Decomposition Example
+7. **Present for CEO approval:**
+   ```bash
+   scripts/orchestrator/decompose.sh review '$JSON'
+   ```
 
+### Vertical Slicing Guidelines
+
+**GOOD - Vertical decomposition:**
+```
+Issue 1: Theme system foundation
+  All layers: CSS variables + toggle component + localStorage
+  -> Shippable: User can toggle theme
+
+Issue 2: Dark mode for dashboard (blocked by #1)
+  All layers: CSS updates + component adjustments
+  -> Shippable: Dashboard respects theme
+
+Issue 3: Dark mode for settings (blocked by #1)
+  All layers: CSS updates + component adjustments
+  -> Shippable: Settings respect theme
+```
+
+**BAD - Horizontal decomposition:**
+```
+Issue 1: Add CSS variables (just styling)
+Issue 2: Add toggle state (just logic)
+Issue 3: Add localStorage (just storage)
+-> None are shippable alone
+```
+
+### Confirmation Gate Pattern
+
+**Always confirm before creating issues:**
+
+```
 CEO: "We need dark mode"
 
-Proposed decomposition:
+Orchestrator: "I'll decompose this into 3 issues:
+
+  1. Foundation - Theme system (CSS vars, toggle)
+     Size: M, Dependencies: None
+
+  2. Dark mode for dashboard
+     Size: S, Blocked by: #1
+
+  3. Dark mode for settings
+     Size: S, Blocked by: #1
+
+Issue 2 and 3 depend on 1 and can run in parallel once #1 completes.
+
+Ready to create these?"
+
+CEO: "yes"
+
+Orchestrator: "Created #52, #53, #54. Dispatching #52 (foundation)..."
 ```
-Issue 1: Foundation - Theme system
-  Summary: CSS variables, toggle component, localStorage persistence
-  Acceptance: Toggle switches theme, persists on reload, applies globally
-  Dependencies: None
-
-Issue 2: Dark mode for dashboard
-  Summary: Apply theme to dashboard components
-  Acceptance: All dashboard widgets respect theme, readable in both modes
-  Dependencies: Blocked by #1
-
-Issue 3: Dark mode for settings
-  Summary: Apply theme to settings pages
-  Dependencies: Blocked by #1
-```
-
-### Issue Template
-
-Use `templates/orchestrator/issue-decomposition.md` for issue body format.
-
-Required sections (match parser.sh expectations):
-- `## Summary` - What needs to be done
-- `## Context` - Background and links
-- `## Acceptance Criteria` - Definition of done
-- `## Dependencies` - Blocked by references
-- `## Notes` - Implementation hints
 
 ---
 
-## Dispatch Workflow
+## Workflow: Worker Dispatch
 
 After CEO approves decomposition, create issues and start workers.
 
 ### Dispatch Process
 
 1. **Create issues in GitHub:**
-   - Use issue template with placeholders filled
-   - Capture created issue numbers
+   ```bash
+   # Format for creation
+   scripts/orchestrator/decompose.sh format '$JSON' 51 > issues.json
+   # Note: 51 is the offset for "Blocked by #N" references
+
+   # Create each issue
+   for issue in issues; do
+     gh issue create --title "$TITLE" --body "$BODY"
+   done
+   ```
 
 2. **Build dependency graph:**
-   - Parse "Blocked by #N" from issue bodies
-   - Validate no circular dependencies (tsort)
+   ```bash
+   scripts/orchestrator/graph.sh graph
+   ```
 
-3. **Dispatch ready workers:**
-   - Identify issues with no blocking dependencies
-   - Call: `scripts/worker/execute.sh --issue N`
-   - Respect max concurrent workers limit
+3. **Validate no cycles:**
+   ```bash
+   scripts/orchestrator/graph.sh validate
+   ```
 
-4. **Report dispatch status:**
-   - Tell CEO which issues were created
-   - Which workers were dispatched
-   - Which are waiting on dependencies
+4. **Get ready issues:**
+   ```bash
+   scripts/orchestrator/graph.sh ready
+   ```
+
+5. **Dispatch ready workers:**
+   ```bash
+   # Single issue
+   scripts/orchestrator/dispatch.sh --issue 42
+
+   # All ready issues
+   scripts/orchestrator/dispatch.sh --all-ready
+
+   # Full dependency-aware dispatch
+   scripts/orchestrator/dispatch.sh --with-dependencies
+   ```
+
+6. **Report dispatch status:**
+   ```
+   Orchestrator: "Created #52, #53, #54.
+
+   Dispatched:
+     - #52 Foundation - Theme system (executing)
+
+   Waiting for dependencies:
+     - #53 Dark mode for dashboard (blocked by #52)
+     - #54 Dark mode for settings (blocked by #52)
+
+   I'll notify you when workers need approval or complete."
+   ```
+
+### Dependency-Aware Ordering
+
+The dispatch script handles dependency ordering automatically:
+- Uses `graph.sh` for topological sort
+- Dispatches in waves (dependencies first)
+- Limits concurrent workers (default: 3)
+- Waits for blockers before dispatching dependents
 
 ### Worker States
 
 Track worker progress via GitHub labels:
-- `worker:planning` - Worker is analyzing the issue
-- `worker:awaiting-approval` - Plan ready, needs thumbs up
-- `worker:executing` - Actively working
-- `worker:complete` - Work finished successfully
-- `worker:partial` - Partial completion, needs attention
-- `worker:failed` - Execution failed
+
+| Label | Description | Icon |
+|-------|-------------|------|
+| `worker:planning` | Worker is analyzing the issue | [..] |
+| `worker:awaiting-approval` | Plan ready, needs thumbs up | [??] |
+| `worker:executing` | Actively working | [..] |
+| `worker:complete` | Work finished successfully | [OK] |
+| `worker:partial` | Partial completion, needs attention | [--] |
+| `worker:failed` | Execution failed | [XX] |
 
 ---
 
-## Status Aggregation Workflow
+## Workflow: Status Aggregation
 
 When intent is STATUS, query GitHub and report progress.
 
 ### Status Process
 
 1. **Determine scope:**
-   - Active workers only (default)
-   - Current phase
-   - All project issues
+   - `active`: Workers with worker:* labels (default)
+   - `phase`: All open issues
+   - `all`: All issues including closed
 
-2. **Query GitHub:**
-   - Filter by worker labels
-   - Include issue titles and states
+2. **Determine format:**
+   - `oneliner`: Quick count summary
+   - `table`: Icon-based progress view
+   - `detailed`: Full JSON with metadata
 
-3. **Format response:**
-   - One-liner for quick check
-   - Table for detailed progress
-   - Full breakdown on request
+3. **Query and format:**
+   ```bash
+   scripts/orchestrator/aggregate.sh --format FORMAT --scope SCOPE
+   ```
 
-### Status Formats
+### Format Selection
 
-**One-liner:** "3 executing, 2 awaiting approval, 1 blocked"
+**Use oneliner for:**
+- Quick status checks
+- Session summaries
+- Proactive updates
 
-**Table:**
+Example: "3 executing, 2 awaiting approval, 1 blocked"
+
+**Use table for:**
+- Progress reviews
+- CEO status requests
+- Identifying blockers
+
+Example:
 ```
-Status | Issue | Title
--------|-------|------
-  [>]  | #42   | Implement login flow
-  [?]  | #43   | Add OAuth support
-  [!]  | #44   | Setup theme system
+Status | Issue  | Title
+-------|--------|----------------------------------------------
+[??]   | #52    | Foundation - Theme system
+[..]   | #53    | Dark mode for dashboard
+[--]   | #54    | Dark mode for settings
 ```
 
-Icons:
-- `[+]` Complete
-- `[>]` Executing
-- `[?]` Awaiting approval
-- `[x]` Blocked/Failed
-- `[ ]` Pending
+**Use detailed for:**
+- Debugging issues
+- Full audit trail
+- API integration
+
+### When to Proactively Report
+
+During active session:
+- Worker completions
+- Failures immediately
+- Approval requests
+- Stay silent when no state changes
+
+---
+
+## Workflow: Failure Handling
+
+When workers fail, report to CEO with context and recovery options.
+
+### Failure Response Process
+
+1. **Gather context:**
+   ```bash
+   gh issue view 42 --json title,body,comments
+   ```
+
+2. **Identify cascade:**
+   ```bash
+   scripts/orchestrator/aggregate.sh --cascade 42
+   ```
+   Or via graph.sh:
+   ```bash
+   scripts/orchestrator/graph.sh cascade 42
+   ```
+
+3. **Report to CEO:**
+   ```
+   [XX] Issue #42 failed: "Foundation - Theme system"
+
+   Error context:
+     Parse error: Missing Acceptance Criteria section
+
+   Cascade impact:
+     - #43: Dark mode for dashboard
+     - #44: Dark mode for settings
+
+   Options:
+     1. retry   - Re-run worker for #42
+     2. modify  - Update issue scope and retry
+     3. abandon - Close #42 and unblock dependents manually
+   ```
+
+### Auto-Retry vs. Escalate Decision
+
+**Auto-retry conditions (transient failures):**
+- Lock timeout (with `--force` flag)
+- Parse errors (after template fix)
+- GitHub API rate limit (after backoff)
+
+**Escalate to CEO (persistent failures):**
+- Execution failures (needs human judgment)
+- Validation failures
+- Permission errors
+- Multiple consecutive failures
+
+**Recovery commands:**
+```bash
+# Retry with force (stale lock)
+scripts/worker/execute.sh --issue 42 --force
+
+# Check worker status
+scripts/worker/execute.sh --issue 42 --status
+
+# Clean up worktree
+scripts/worktree-remove.sh issue/42
+```
+
+### Cascade Handling
+
+When a blocking issue fails:
+1. Identify all dependent issues
+2. Label as `cascade-blocked`
+3. Post comment explaining blocker
+4. Report full cascade to CEO
+5. Present options for resolution
+
+---
+
+## Quick Actions
+
+Shortcuts for common operations during active session.
+
+### Approve N
+Approve the execution plan for issue #N.
+
+```bash
+# Add thumbs up reaction to plan comment
+gh api repos/OWNER/REPO/issues/comments/COMMENT_ID/reactions \
+  --method POST -f content='+1'
+```
+
+### Retry N
+Re-run a failed worker for issue #N.
+
+```bash
+gh issue edit N --remove-label "worker:failed"
+scripts/worker/execute.sh --issue N
+```
+
+### Status
+Quick oneliner status summary.
+
+```bash
+scripts/orchestrator/aggregate.sh --format oneliner
+```
+
+### Progress
+Table view of all active workers.
+
+```bash
+scripts/orchestrator/aggregate.sh --format table --scope active
+```
+
+### Details N
+Full details for specific issue.
+
+```bash
+gh issue view N --json number,title,labels,comments
+scripts/orchestrator/graph.sh deps N
+```
 
 ---
 
@@ -197,14 +642,28 @@ When intent is DECISION, present options for blocked or failed items.
 ### Decision Process
 
 1. **Identify blocked items:**
-   - Query issues with `blocked` or `cascade-blocked` labels
-   - Find root cause (which issue blocks which)
+   ```bash
+   gh issue list --label "blocked" --state open
+   gh issue list --label "cascade-blocked" --state open
+   ```
 
-2. **Present options:**
-   - For each blocked item, explain why it's blocked
-   - Suggest: retry, skip dependency, modify scope, abandon
+2. **Find root cause:**
+   ```bash
+   scripts/orchestrator/graph.sh deps ISSUE
+   ```
 
-3. **Execute CEO choice:**
+3. **Present options:**
+   ```
+   Issue #43 is blocked by #42 (failed).
+
+   Options:
+   1. Fix #42 and retry - Resolve root cause first
+   2. Skip dependency - Mark #43 as unblocked if no longer relevant
+   3. Modify scope - Reduce #43 scope to remove dependency
+   4. Abandon - Close both #42 and #43
+   ```
+
+4. **Execute CEO choice:**
    - Update labels accordingly
    - Re-dispatch if appropriate
 
@@ -217,115 +676,34 @@ When intent is CORRECTION, halt or modify active work.
 ### Correction Process
 
 1. **Identify scope:**
-   - Specific issue ("stop #42")
-   - All active work ("stop everything")
-   - Phase-level ("stop Phase 3")
+   - Specific issue: "stop #42"
+   - All active: "stop everything"
+   - Phase-level: "stop Phase 3 work"
 
 2. **Take action:**
-   - Kill running workers (signal handling)
-   - Update labels to reflect stopped state
-   - Report what was stopped
+   ```bash
+   # Stop specific worker
+   scripts/orchestrator/dispatch.sh --issue 42 --force
 
-3. **Cascade handling:**
-   - Identify dependent issues
-   - Label as cascade-blocked
-   - Report cascade impact
+   # Stop all workers (via trap in dispatch.sh)
+   # Ctrl+C during dispatch, or kill background PIDs
+   ```
 
----
+3. **Update state:**
+   ```bash
+   gh issue edit 42 --remove-label "worker:executing" --add-label "worker:failed"
+   gh issue comment 42 --body "## Stopped by orchestrator
 
-## Failure Handling
+   Work halted per CEO request.
 
-When workers fail, report to CEO with context and recovery options.
+   **Reason:** [reason from CEO]
+   **State at stop:** [partial work description]"
+   ```
 
-### Failure Response
-
-1. **Gather context:**
-   - Which issue failed
-   - Error message/reason
-   - Duration before failure
-   - Related logs
-
-2. **Identify cascade:**
-   - Find issues blocked by the failed issue
-   - Label as cascade-blocked
-
-3. **Present options:**
-   - Retry (for transient failures only)
-   - Modify issue scope
-   - Skip and continue
-   - Abandon chain
-
-### Auto-Retry Conditions
-
-Only auto-retry for:
-- Lock timeout (with `--force` flag)
-- Parse errors (after template fix)
-
-NEVER auto-retry:
-- Execution failures (needs human judgment)
-- Validation failures
-- Permission errors
-
----
-
-## Function Calling Definitions
-
-<!-- TODO: Complete in Plan 05 - these are placeholders for Gemini function calling -->
-
-### create_github_issues
-
-Creates GitHub issues from decomposed tasks.
-
-```
-Parameters:
-  issues: array of {
-    title: string - Issue title (brief, actionable)
-    summary: string - What needs to be done
-    acceptance: array of strings - Acceptance criteria
-    depends_on: array of numbers - Issue numbers this depends on
-  }
-
-Returns:
-  created_issues: array of {number, title, url}
-```
-
-### dispatch_workers
-
-Starts Claude workers for ready issues (no blocking dependencies).
-
-```
-Parameters:
-  issue_numbers: array of numbers - Issues to dispatch
-
-Returns:
-  dispatched: array of {number, pid}
-  blocked: array of {number, blocked_by}
-```
-
-### query_worker_status
-
-Gets current status of workers.
-
-```
-Parameters:
-  scope: "active" | "phase" | "all"
-  format: "oneliner" | "table" | "detailed"
-
-Returns:
-  status: formatted string or JSON based on format
-```
-
-### halt_workers
-
-Stops active workers.
-
-```
-Parameters:
-  scope: "all" | array of issue numbers
-
-Returns:
-  stopped: array of {number, previous_state}
-```
+4. **Handle cascade:**
+   ```bash
+   scripts/orchestrator/aggregate.sh --cascade 42
+   ```
 
 ---
 
@@ -333,9 +711,12 @@ Returns:
 
 When orchestrating, load standard context:
 
-- `.planning/PROJECT.md` - Project overview and decisions
-- `.planning/STATE.md` - Current position and accumulated context
-- `.planning/ROADMAP.md` - Phase structure and dependencies
+```bash
+# Project context
+cat .planning/PROJECT.md   # Project overview and decisions
+cat .planning/STATE.md     # Current position and accumulated context
+cat .planning/ROADMAP.md   # Phase structure and dependencies
+```
 
 Issue-specific context comes from the issue body itself.
 
@@ -358,21 +739,55 @@ When CEO wraps up:
 - List pending items needing attention
 - Provide resume instructions
 
+```
+Session Summary:
+  - Created: 3 issues (#52, #53, #54)
+  - Completed: 1 (#52 Foundation - Theme system)
+  - In progress: 2 (#53, #54 awaiting approval)
+
+Pending:
+  - #53: Review plan and approve
+  - #54: Review plan and approve
+
+Resume: "Continue dark mode work" or "Status"
+```
+
 ---
 
-## Helper Scripts
+## Helper Scripts Reference
 
 Located in `scripts/orchestrator/`:
 
-| Script | Purpose |
-|--------|---------|
-| `intent.sh` | Classify CEO input into categories |
-| `decompose.sh` | Task decomposition helpers (future) |
-| `dispatch.sh` | Dependency-aware worker dispatch (future) |
-| `aggregate.sh` | Status aggregation helpers (future) |
+| Script | Purpose | Key Functions |
+|--------|---------|---------------|
+| `intent.sh` | Classify CEO input | `classify_intent()` |
+| `decompose.sh` | Task decomposition | `generate_decomposition_prompt()`, `validate_decomposition()`, `format_for_creation()` |
+| `graph.sh` | Dependency management | `build_dependency_graph()`, `get_execution_order()`, `get_ready_issues()`, `detect_cascade()` |
+| `dispatch.sh` | Worker dispatch | `dispatch_single()`, `dispatch_parallel()`, `dispatch_with_dependencies()` |
+| `aggregate.sh` | Status aggregation | `format_oneliner()`, `format_table()`, `format_detailed()`, `detect_cascade()` |
+
+---
+
+## Error Handling Reference
+
+### Common Errors and Recovery
+
+| Error | Cause | Recovery |
+|-------|-------|----------|
+| "Lock held by another process" | Concurrent execution | Wait or use `--force` |
+| "Cycle detected in dependency graph" | Circular dependencies | Re-decompose issues |
+| "Missing Acceptance Criteria" | Invalid issue format | Update issue body |
+| "Rate limit exceeded" | Too many API calls | Wait for reset |
+| "Worker already executing" | Duplicate dispatch | Check status first |
+
+### Escalation Path
+
+1. Auto-recover if possible (transient errors)
+2. Report to CEO with context and options
+3. Never silently fail - always log and report
 
 ---
 
 *Skill: orchestrate*
-*Version: 1.0.0*
+*Version: 2.0.0*
 *Phase: 05-orchestration*
