@@ -82,10 +82,14 @@ Plans:
   1. Pre-hooks block destructive commands and validate scope before execution
   2. Post-hooks validate outputs and log all actions to audit trail
   3. Agent manifests define scope boundaries that are enforced at execution time
-**Plans**: TBD
+**Plans**: 5 plans in 3 waves
 
 Plans:
-- [ ] 04-01: TBD during plan-phase
+- [ ] 04-01-PLAN.md - Trust guardrail YAML configuration and yq installation (TRUST-01)
+- [ ] 04-02-PLAN.md - Audit chain infrastructure with hash chaining (TRUST-02)
+- [ ] 04-03-PLAN.md - Validator library with command and scope validation (TRUST-01, TRUST-03)
+- [ ] 04-04-PLAN.md - Hooks library with pre/post execution wrapper (TRUST-01, TRUST-02)
+- [ ] 04-05-PLAN.md - Worker integration and documentation (TRUST-01, TRUST-02, TRUST-03)
 
 ### Phase 5: Orchestration
 **Goal**: Gemini orchestrator can decompose CEO intent, dispatch to workers, and aggregate status
@@ -139,7 +143,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Foundation | 3/3 | Complete | 2026-01-27 |
 | 2. GitHub Coordination | 5/5 | Complete | 2026-01-27 |
 | 3. Single Worker | 4/4 | Complete | 2026-01-27 |
-| 4. Trust Guardrails | 0/TBD | Not started | - |
+| 4. Trust Guardrails | 0/5 | Planned | - |
 | 5. Orchestration | 0/TBD | Not started | - |
 | 6. Worker Parallelization | 0/TBD | Not started | - |
 | 7. CEO Interface | 0/TBD | Not started | - |
