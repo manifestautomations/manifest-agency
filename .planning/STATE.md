@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 4 of 7 (Trust Guardrails)
-Plan: 3 of 5
+Plan: 4 of 5
 Status: In progress
-Last activity: 2026-01-28 — Completed 04-03-PLAN.md (Validator Library)
+Last activity: 2026-01-28 — Completed 04-04-PLAN.md (Hooks Library)
 
-Progress: [█████░░░░░] 60%
+Progress: [██████░░░░] 64%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 4 min
-- Total execution time: 1.06 hours
+- Total plans completed: 16
+- Average duration: 4.4 min
+- Total execution time: 1.13 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [█████░░░░░] 60%
 | 01-foundation | 3 | 6min | 2min |
 | 02-github-coordination | 5 | 20min | 4min |
 | 03-single-worker | 4 | 24min | 6min |
-| 04-trust-guardrails | 3 | 14min | 4.7min |
+| 04-trust-guardrails | 4 | 19min | 4.8min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (2min), 03-04 (15min), 04-01 (3min), 04-02 (6min), 04-03 (5min)
+- Last 5 plans: 03-04 (15min), 04-01 (3min), 04-02 (6min), 04-03 (5min), 04-04 (5min)
 - Trend: Infrastructure tasks average 4-6min, documentation heavier tasks 10-15min
 
 *Updated after each plan completion*
@@ -144,6 +144,13 @@ Recent decisions affecting current work:
 - Deny patterns checked before allow patterns (deny always wins)
 - Safety floor patterns ALWAYS block regardless of trust level (11 critical patterns)
 
+**From 04-04 (Hooks Library):**
+- TTY detection using [ -t 0 ] for interactive terminal check
+- Non-TTY mode falls back to GitHub approval workflow (prevents silent failures)
+- Confirmation timeout defaults to 30 seconds with deny-by-default (safe default)
+- Trust decay applied after every successful command execution (-5 points per clean action)
+- Windows compatibility: text-based severity markers instead of emojis
+
 ### Pending Todos
 
 None yet.
@@ -154,6 +161,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-28T04:54:00Z
-Stopped at: Completed 04-03-PLAN.md (Validator Library)
+Last session: 2026-01-28T05:02:00Z
+Stopped at: Completed 04-04-PLAN.md (Hooks Library)
 Resume file: None
