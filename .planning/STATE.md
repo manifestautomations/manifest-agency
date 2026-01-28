@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 4 of 7 (Trust Guardrails)
-Plan: 4 of 5
-Status: In progress
-Last activity: 2026-01-28 — Completed 04-04-PLAN.md (Hooks Library)
+Plan: 5 of 5
+Status: Phase complete
+Last activity: 2026-01-28 — Completed 04-05-PLAN.md (Guardrails Integration)
 
-Progress: [██████░░░░] 64%
+Progress: [██████░░░░] 68%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 4.4 min
-- Total execution time: 1.13 hours
+- Total plans completed: 17
+- Average duration: 4.5 min
+- Total execution time: 1.25 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [██████░░░░] 64%
 | 01-foundation | 3 | 6min | 2min |
 | 02-github-coordination | 5 | 20min | 4min |
 | 03-single-worker | 4 | 24min | 6min |
-| 04-trust-guardrails | 4 | 19min | 4.8min |
+| 04-trust-guardrails | 5 | 26min | 5.2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-04 (15min), 04-01 (3min), 04-02 (6min), 04-03 (5min), 04-04 (5min)
-- Trend: Infrastructure tasks average 4-6min, documentation heavier tasks 10-15min
+- Last 5 plans: 04-01 (3min), 04-02 (6min), 04-03 (5min), 04-04 (5min), 04-05 (7min)
+- Trend: Infrastructure tasks average 4-7min, documentation heavier tasks 10-15min
 
 *Updated after each plan completion*
 
@@ -151,6 +151,13 @@ Recent decisions affecting current work:
 - Trust decay applied after every successful command execution (-5 points per clean action)
 - Windows compatibility: text-based severity markers instead of emojis
 
+**From 04-05 (Guardrails Integration):**
+- Worker logs lifecycle events (worker_start, execution_start, execution_complete, execution_failed) - NOT individual Claude tool calls
+- Claude CLI's --allowedTools flag handles tool-level restrictions
+- Default agent name 'claude-worker' for all worker executions
+- Guardrails enabled by default (enabled: true in config)
+- Default trust level 2 (safe write) for new agents
+
 ### Pending Todos
 
 None yet.
@@ -161,6 +168,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-28T05:02:00Z
-Stopped at: Completed 04-04-PLAN.md (Hooks Library)
+Last session: 2026-01-28T05:09:40Z
+Stopped at: Completed 04-05-PLAN.md (Guardrails Integration) - Phase 4 complete
 Resume file: None
