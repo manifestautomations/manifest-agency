@@ -1,0 +1,180 @@
+# Trust Guardrails Configuration
+# Project-level guardrail rules with hierarchical inheritance
+# Version: 1.0.0
+
+version: 1.0.0
+
+# Safety Floor - Critical patterns that ALWAYS block regardless of trust level
+# These are non-overridable and protect against catastrophic failures
+safety_floor:
+  patterns:
+    - pattern: 'rm\s+-rf\s+/'
+      severity: critical
+      action: block
+      reason: "Catastrophic filesystem deletion"
+
+    - pattern: 'dd\s+if=.*\s+of=/dev/.*'
+      severity: critical
+      action: block
+      reason: "Direct disk overwrite"
+
+    - pattern: 'mkfs\..*'
+      severity: critical
+      action: block
+      reason: "Filesystem formatting"
+
+    - pattern: 'curl\s+.*\s+\|\s+bash'
+      severity: critical
+      action: block
+      reason: "Remote code execution via curl"
+
+    - pattern: 'wget\s+.*\s+\|\s+(ba)?sh'
+      severity: critical
+      action: block
+      reason: "Remote code execution via wget"
+
+    - pattern: 'git\s+push\s+--force\s+(main|master)'
+      severity: critical
+      action: block
+      reason: "Force push to protected branch"
+
+    - pattern: 'git\s+reset\s+--hard\s+origin/(main|master)'
+      severity: critical
+      action: block
+      reason: "Hard reset to remote protected branch (potential data loss)"
+
+    - pattern: 'chmod\s+-R\s+777\s+/'
+      severity: critical
+      action: block
+      reason: "World-writable root filesystem"
+
+    - pattern: ':\(\)\{\s*:\|\:&\s*\};:'
+      severity: critical
+      action: block
+      reason: "Fork bomb"
+
+    - pattern: '>\s*/dev/sd[a-z]'
+      severity: critical
+      action: block
+      reason: "Direct disk write"
+
+    - pattern: 'rm\s+-rf\s+~'
+      severity: critical
+      action: block
+      reason: "Home directory deletion"
+
+    - pattern: 'rm\s+-rf\s+\.git'
+      severity: critical
+      action: block
+      reason: "Git history deletion"
+
+# Destructive Operations - High severity, confirm or block based on trust
+destructive_operations:
+  patterns:
+    - pattern: 'rm\s+-rf\s+\.'
+      severity: high
+      action: confirm
+      reason: "Recursive deletion of hidden files"
+
+    - pattern: 'git\s+reset\s+--hard'
+      severity: high
+      action: confirm
+      reason: "Discard all uncommitted changes"
+
+    - pattern: 'git\s+clean\s+-[f]?d'
+      severity: high
+      action: confirm
+      reason: "Delete untracked files"
+
+    - pattern: 'git\s+checkout\s+--\s+\.'
+      severity: high
+      action: confirm
+      reason: "Discard working tree changes"
+
+    - pattern: 'DROP\s+TABLE'
+      severity: high
+      action: confirm
+      reason: "SQL table deletion"
+      case_sensitive: false
+
+    - pattern: 'DROP\s+DATABASE'
+      severity: high
+      action: confirm
+      reason: "SQL database deletion"
+      case_sensitive: false
+
+# Scope Enforcement Settings
+# These settings control how glob patterns are interpreted
+scope_enforcement:
+  require_literal_separator: true  # Path separators must be literal (not wildcards)
+  require_literal_leading_dot: true  # Leading dots must be literal (not wildcards)
+  deny_tightening_only: true  # Only deny rules can tighten scope, allow rules cannot
+
+# Trust Levels (0-4) with response mappings
+# Higher trust = more autonomy
+trust_levels:
+  0:  # No Trust
+    name: "No Trust"
+    description: "Read-only access, must request approval for every action"
+    critical: block
+    high: block
+    medium: block
+    low: block
+
+  1:  # Basic Trust
+    name: "Basic Trust"
+    description: "Can suggest changes via diffs, cannot execute directly"
+    critical: block
+    high: confirm
+    medium: confirm
+    low: allow
+
+  2:  # Limited Autonomy
+    name: "Limited Autonomy"
+    description: "Can edit files with immediate verification"
+    critical: block
+    high: confirm
+    medium: allow
+    low: allow
+
+  3:  # Standard Autonomy
+    name: "Standard Autonomy"
+    description: "Can execute multi-step plans with checkpoints"
+    critical: block
+    high: allow
+    medium: allow
+    low: allow
+
+  4:  # Full Autonomy
+    name: "Full Autonomy"
+    description: "Trusted for complex operations, minimal oversight"
+    critical: confirm
+    high: allow
+    medium: allow
+    low: allow
+
+# Violation Thresholds and Scoring
+# Points accumulate with violations and decay with clean actions
+violation_scoring:
+  thresholds:
+    warning: 20      # Trigger warning notification
+    probation: 40    # Require confirmation for more operations
+    demotion: 60     # Auto-demote trust level
+
+  points_per_severity:
+    critical: 30     # Critical violation
+    high: 15         # High severity violation
+    medium: 5        # Medium severity violation
+    low: 2           # Low severity violation
+
+  decay_rate: 5      # Points removed per clean action
+
+  decay_threshold: 100  # Max clean actions before full reset
+
+# Audit Configuration
+audit:
+  log_all_checks: true
+  log_blocks: true
+  log_confirms: true
+  log_allows: false  # Too noisy for normal operations
+  retention_days: 90
