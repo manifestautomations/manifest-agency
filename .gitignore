@@ -10,3 +10,7 @@
 !.worker/logs/.gitkeep
 .worker/locks/*
 !.worker/locks/.gitkeep
+.worker/audit/*.audit.jsonl
+.worker/audit/*.jsonl.gz
+!.worker/audit/.gitkeep
+!.worker/audit/chain.json

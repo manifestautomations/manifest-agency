@@ -1,0 +1,2 @@
+# This directory stores worker audit logs with cryptographic hash chaining
+# See: .claude/skills/worker/lib/audit.sh
