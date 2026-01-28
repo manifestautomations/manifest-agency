@@ -5,7 +5,7 @@
 set -e
 
 VERSION="v4.44.1"  # Latest stable version as of 2025-01
-INSTALL_DIR="/usr/bin"
+INSTALL_DIR="$HOME/bin"
 BINARY_NAME="yq"
 DOWNLOAD_URL="https://github.com/mikefarah/yq/releases/download/${VERSION}/yq_windows_amd64.exe"
 
@@ -34,10 +34,20 @@ else
     exit 1
 fi
 
-# Install to /usr/bin
+# Create bin directory if it doesn't exist
+mkdir -p "${INSTALL_DIR}"
+
+# Install to user bin directory
 echo "Installing to ${INSTALL_DIR}/${BINARY_NAME}..."
 mv "$TMP_FILE" "${INSTALL_DIR}/${BINARY_NAME}"
 chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
+
+# Ensure $HOME/bin is in PATH
+if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
+    export PATH="$HOME/bin:$PATH"
+    echo "Added $HOME/bin to PATH for this session"
+    echo "Note: Add 'export PATH=\"\$HOME/bin:\$PATH\"' to your ~/.bashrc for persistence"
+fi
 
 # Verify installation
 if command -v yq &> /dev/null; then
