@@ -92,6 +92,7 @@ Gemini orchestrator receives CEO intent via Antigravity conversation, decomposes
 - **Scheduled briefings:** Cron-triggered status reports without CEO presence
 - **Skill/workflow registration:** Define reusable `/ship`, `/status` commands in Antigravity (when skill system available)
 - **CEO preference memory:** Track verbosity preferences, skip confirmation thresholds, etc.
+- **Model Selection Strategy (ORCH-04):** Selecting between Gemini Flash/Pro/Deep Think based on task complexity deferred to Phase 7 (CEO Interface). Phase 5 uses default model; CEO Interface will add model selection based on intent complexity, cost optimization, and response time requirements.
 
 </deferred>
 
