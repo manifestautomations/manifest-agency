@@ -97,7 +97,7 @@ Plans:
 **Requirements**: ORCH-01, ORCH-02, ORCH-03, ORCH-04
 **Success Criteria** (what must be TRUE):
   1. Gemini orchestrator receives high-level intent and decomposes into discrete subtasks
-  2. Orchestrator dispatches work to Claude via cross-surface terminal control (claude-code CLI)
+  2. Orchestrator dispatches work to Claude workers via terminal command (scripts/worker/execute.sh)
   3. Model selection follows agent manifests (Flash/Pro/Deep Think)
   4. Orchestrator aggregates worker status and reports results
 **Plans**: 6 plans in 3 waves
