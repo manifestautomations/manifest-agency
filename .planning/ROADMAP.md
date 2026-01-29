@@ -29,12 +29,12 @@ See `.planning/MILESTONES.md` for v1.0 details.
   2. New project can be bootstrapped as managed workspace via single command
   3. Each workspace maintains its own trust ledger (scores isolated between projects)
   4. Invalid workspace registration fails with clear error message
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 08-01: Workspace registry schema and config
-- [ ] 08-02: Workspace bootstrap and validation scripts
-- [ ] 08-03: Per-workspace trust ledger isolation
+- [ ] 08-01-PLAN.md - Workspace discovery and name resolution (Wave 1)
+- [ ] 08-02-PLAN.md - Workspace health and validation (Wave 2)
+- [ ] 08-03-PLAN.md - Workspace bootstrap with trust isolation (Wave 3)
 
 #### Phase 9: Cross-Workspace Dispatch
 **Goal**: CEO can dispatch work to any registered workspace by name
@@ -103,7 +103,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 8. Workspace Foundation | v1.1 | 0/3 | Not started | - |
+| 8. Workspace Foundation | v1.1 | 0/3 | Planned | - |
 | 9. Cross-Workspace Dispatch | v1.1 | 0/2 | Not started | - |
 | 10. Portfolio Visibility | v1.1 | 0/4 | Not started | - |
 | 11. Trust & Approval Gates | v1.1 | 0/2 | Not started | - |
