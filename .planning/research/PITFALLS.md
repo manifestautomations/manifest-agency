@@ -1,606 +1,755 @@
-# Domain Pitfalls: Multi-Agent AI Orchestration
+# Multi-Workspace Orchestration Pitfalls
 
-**Domain:** AI-powered development agency with multi-agent orchestration
-**Researched:** 2026-01-26
-**Confidence:** HIGH (based on 2026 production deployments, post-mortems, and research papers)
+**Focus:** Scaling from single-workspace (v1.0) to multi-workspace orchestration (v1.1)
+**Researched:** 2026-01-29
+**Confidence:** HIGH (verified against 2025-2026 production failures and academic research)
+
+---
+
+## Quick Reference: Top 10 Migration Pitfalls
+
+| # | Pitfall | Severity | Detection Difficulty | Phase to Address |
+|---|---------|----------|---------------------|------------------|
+| 1 | Context Contamination | CRITICAL | Hard | Phase 1: Foundation |
+| 2 | Submodule State Drift | CRITICAL | Medium | Phase 1: Foundation |
+| 3 | Priority Starvation | HIGH | Medium | Phase 2: Orchestration |
+| 4 | Status Aggregation Staleness | HIGH | Easy | Phase 2: Orchestration |
+| 5 | Cross-Project Dependency Cycles | CRITICAL | Hard | Phase 2: Orchestration |
+| 6 | Resource Contention Cascades | HIGH | Medium | Phase 3: Execution |
+| 7 | Coordination Overhead Explosion | MEDIUM | Easy | Phase 2: Orchestration |
+| 8 | Trust Boundary Leakage | CRITICAL | Hard | Phase 1: Foundation |
+| 9 | State Synchronization Race Conditions | HIGH | Hard | Phase 3: Execution |
+| 10 | Observability Fragmentation | MEDIUM | Medium | Phase 1: Foundation |
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, project cancellations, or catastrophic failures.
+Mistakes that cause rewrites, data loss, or require reverting to v1.0.
 
-### Pitfall 1: The "God Agent" Architecture
+### Pitfall 1: Context Contamination Across Workspaces
 
-**What goes wrong:** Creating a single monolithic agent that tries to handle all responsibilities (routing, execution, reporting, error handling, domain logic). This dilutes the model's attention across too many distinct tasks, leading to confusion, hallucinations, and unreliable behavior.
+**What goes wrong:** Workers operating in one workspace accidentally leak context (file paths, variable names, project-specific conventions, secrets) into another workspace. This violates isolation and can cause incorrect behavior or security breaches.
 
-**Why it happens:** Starting simple with one agent and continuously adding capabilities instead of decomposing into specialized agents. Fear of coordination complexity drives teams to keep adding to a single agent.
+**Why it happens when scaling from single to multi-workspace:**
+- v1.0 workers assume single workspace context; prompts don't explicitly scope
+- Shared agent memory or conversation history persists across workspace switches
+- Context window includes previous workspace artifacts not explicitly cleared
+- Vector store queries not filtered by workspace/tenant ID
 
 **Consequences:**
-- Agent hallucinations increase as cognitive load exceeds capacity
-- Context gets muddy, model starts filling gaps with fabrication
-- Debugging becomes impossible (which responsibility failed?)
-- Cannot scale different concerns independently
-- Resembles early monoliths with "impressive demos, fragile behavior, and opaque failure modes"
+- Worker applies Project A's coding conventions to Project B
+- Secrets or credentials from one project appear in another's commits
+- File paths reference wrong workspace (e.g., `../project-a/` in project-b)
+- Configuration drift as patterns from one project "infect" others
+- Trust violations when workspace A's trust level applied to workspace B
+
+**Warning signs:**
+- Commits reference files outside current workspace
+- Agent responses mention project names not in current context
+- Style/convention inconsistencies that match another project
+- `gh` CLI commands targeting wrong repository
 
 **Prevention:**
-- Start with agent specialization from day one
-- Each agent should have ONE clear domain of responsibility
-- Decompose by concern: orchestration, execution, reporting, validation
-- Use the "could this be split?" test continuously
-- Monitor groundedness scores - drops indicate cognitive overload
+```
+1. HARD CONTEXT RESET between workspace switches
+   - Clear conversation history completely
+   - Re-inject workspace-specific CLAUDE.md
+   - Verify cwd before any operation
 
-**Detection:**
-- Agent produces inconsistent results for similar inputs
-- Hallucination rate increases over time
-- Context windows frequently overflow
-- Single agent config file exceeds 500 lines
-- Team says "it works except when..."
+2. WORKSPACE ID in every prompt/tool call
+   - Include {workspace_id} in system prompt header
+   - Tool calls must include workspace scope
+   - Validate paths start with expected workspace root
 
-**Phase impact:** This mistake manifests in Phase 1 (foundation) but becomes exponentially harder to fix after Phase 3 when agents have accumulated state and workflows.
+3. NO SHARED MEMORY across workspaces
+   - Vector stores partitioned by workspace_id
+   - Session state scoped to workspace
+   - Trust ledger is per-workspace, not global
+
+4. EXPLICIT ISOLATION TESTS
+   - Test: Run task in workspace A, switch to B, verify no leakage
+   - Test: Attempt cross-workspace file access, verify rejection
+```
+
+**Existing v1.0 gaps to address:**
+- Current trust ledger is single file (`.planning/trust-ledger.md`)
+- Context handoff protocol doesn't mandate workspace clearing
+- No workspace ID in agent spawn commands
 
 **Sources:**
-- [AI Agent Development Mistakes 2026](https://www.wildnetedge.com/blogs/common-ai-agent-development-mistakes-and-how-to-avoid-them)
-- [Multi-Agent Systems Architecture 2026](https://www.cloudgeometry.com/blog/from-solo-act-to-orchestra-why-multi-agent-systems-demand-real-architecture)
+- [Multi-Tenant AI Leakage: Isolation & Security Challenges](https://layerxsecurity.com/generative-ai/multi-tenant-ai-leakage/)
+- [Implementing Tenant Isolation - AWS Bedrock](https://aws.amazon.com/blogs/machine-learning/implementing-tenant-isolation-using-agents-for-amazon-bedrock-in-a-multi-tenant-environment/)
+- [MCP Security for Multi-Tenant AI Agents](https://prefactor.tech/blog/mcp-security-multi-tenant-ai-agents-explained)
 
 ---
 
-### Pitfall 2: Context Overflow and Poor Handoff Protocols
+### Pitfall 2: Submodule State Drift
 
-**What goes wrong:** Passing entire conversation histories between agents without summarization causes context windows to explode, degrading response quality while multiplying token costs.
+**What goes wrong:** Git submodules point to outdated commits, causing workers to operate on stale code while believing they're current. The "detached HEAD" default behavior means workers can make commits that are lost on next update.
 
-**Why it happens:**
-- Assuming more context is always better
-- Not designing explicit handoff protocols
-- Treating context as "free" until production costs hit
-- Failing to distinguish between essential and supplementary context
+**Why it happens when adding submodules to v1.0:**
+- v1.0 uses single repo; submodules introduce distributed state
+- `git pull` in parent doesn't automatically update submodules
+- CI/CD pipelines clone without `--recurse-submodules`
+- Workers forget to push submodule changes before parent commit
+- Detached HEAD state discards local changes on update
 
 **Consequences:**
-- Token costs explode (often doubling overnight from minor usage changes)
-- Agents lose focus on current task buried in history
-- Response quality degrades as relevant signals drown in noise
-- Latency increases with every agent hop
-- Budget underestimation by 40-60% (most common cause of project cancellation)
+- Workers implement features against outdated API versions
+- Merge conflicts appear "from nowhere" when submodules finally sync
+- Lost commits when submodule updated after local work
+- CI passes locally but fails remotely (different submodule states)
+- Cross-project changes require coordinated multi-repo commits (hard to review)
+
+**Warning signs:**
+- Submodule shows different commit than expected
+- `git status` shows submodule as "modified" unexpectedly
+- CI failures mentioning "submodule not found" or "version mismatch"
+- Commits in submodule not appearing in `git log` of submodule
 
 **Prevention:**
-- Design explicit handoff schemas (what crosses boundaries, what stays local)
-- Implement context summarization at agent boundaries
-- Use structured formats (JSON schemas, protobuf) for inter-agent messages
-- Track context size as a first-class metric
-- Set hard limits on context per agent (fail fast if exceeded)
-- Implement semantic caching for repeated lookups
+```
+1. ALWAYS TRACK BRANCHES, NOT COMMITS
+   - Configure: git config -f .gitmodules submodule.<name>.branch <branch>
+   - Update via: git submodule update --remote --merge
 
-**Detection:**
-- Token usage grows non-linearly with agent chain depth
-- Response time increases with conversation length
-- Cost alerts trigger on routine operations
-- Agents reference context from 50+ messages ago
-- Context window truncation errors in logs
+2. AUTOMATION SCRIPTS for submodule operations
+   - Pre-pull hook: git submodule sync && git submodule update --init --recursive
+   - Pre-commit hook: Verify submodule commits pushed
+   - CI/CD: Always use `git clone --recurse-submodules`
 
-**Phase impact:** Must be designed in Phase 1 (agent protocol design). Retrofitting in Phase 4+ requires rewriting all agent interfaces.
+3. SUBMODULE HEALTH CHECK before any work
+   - Script: verify-submodule-state.sh
+   - Check: no uncommitted changes in submodules
+   - Check: submodule HEAD matches expected branch tip
+
+4. PUSH SUBMODULES FIRST
+   - git config push.recurseSubmodules on-demand
+   - CI blocks parent push if submodule unpushed
+```
+
+**Integration with existing v1.0:**
+- Add submodule verification to worker startup sequence
+- Extend pre-commit hooks to check submodule state
+- GitHub Actions workflow needs `submodules: recursive`
 
 **Sources:**
-- [Multi-Agent Orchestration Common Mistakes](https://dev.to/eira-wexford/how-to-build-multi-agent-systems-complete-2026-guide-1io6)
-- [AI FinOps and Cost Management 2026](https://analyticsweek.com/ai-finops-sovereign-infrastructure-costs/)
-- [Reducing Hallucinations with Semantic Cache](https://aws.amazon.com/blogs/machine-learning/reducing-hallucinations-in-llm-agents-with-a-verified-semantic-cache-using-amazon-bedrock-knowledge-bases/)
+- [Git Submodules - Official Documentation](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+- [Git Submodules Best Practices](https://gist.github.com/slavafomin/08670ec0c0e75b500edbaa5d43a5c93c)
+- [Fixing Submodule Issues in Git](https://www.mindfulchase.com/explore/troubleshooting-tips/fixing-merge-conflicts,-detached-head,-and-submodule-issues-in-git.html)
 
 ---
 
-### Pitfall 3: Shared Mutable State Without Transaction Boundaries
+### Pitfall 3: Cross-Project Dependency Cycles
 
-**What goes wrong:** Multiple concurrent agents reading and writing to shared state (GitHub issues, project boards, file system) without proper locking or transaction semantics results in race conditions, lost updates, and inconsistent data.
+**What goes wrong:** Project A depends on Project B's component, while Project B depends on Project A's utility. Workers deadlock waiting for each other, or changes cascade infinitely as each update triggers the other.
 
-**Why it happens:**
-- Treating GitHub API as a database without ACID properties
-- Assuming "eventually consistent" is good enough
-- Not designing for concurrent agent execution from day one
-- Misunderstanding that git worktrees don't prevent file conflicts
+**Why it happens when adding multi-project orchestration:**
+- Single-project v1.0 has clear internal dependencies
+- Multi-project introduces implicit cross-repo dependencies
+- Submodules can create circular references
+- Shared libraries updated in one project break another
+- No global dependency graph exists
 
 **Consequences:**
-- Agents overwrite each other's work silently
-- Issues get assigned to multiple agents simultaneously
-- Project board states desync from actual status
-- Git conflicts burn agent context trying to resolve
-- Rollbacks cascade (reverting one agent breaks three others)
-- File conflicts in worktrees still happen on shared files (.github/, package.json)
+- Workers wait indefinitely for cross-project dependencies
+- Change in Project A breaks Project B build, triggering fix in B that breaks A
+- Coordination overhead exceeds value of shared code
+- Cannot deploy independently (tight coupling)
+- "Version hell" when trying to align cross-project versions
+
+**Warning signs:**
+- Task blocked "waiting for Project X to complete Y"
+- Build failures cascade across multiple projects
+- Same shared file modified by multiple projects in same time period
+- Circular submodule references in `.gitmodules`
 
 **Prevention:**
-- Design state ownership boundaries (each agent owns specific resources)
-- Use optimistic locking with version checks (GitHub ETag headers)
-- Implement claim-based assignment (atomic test-and-set via GitHub API)
-- Establish file ownership conventions (agent X never touches files owned by agent Y)
-- Use message queues for coordination (agents publish intent, coordinator grants access)
-- Implement idempotent operations (safe to retry without side effects)
+```
+1. DEPENDENCY GRAPH at orchestration level
+   - Map all cross-project dependencies BEFORE assigning work
+   - Detect cycles at planning time, not execution time
+   - Reject plans that create circular dependencies
 
-**Detection:**
-- GitHub API returns 409 Conflict frequently
-- Git merge conflicts in automated workflows
-- Issues have inconsistent state between API and UI
-- Agent logs show "retrying operation" repeatedly
-- Data races visible in distributed tracing
+2. ACYCLIC ARCHITECTURE enforcement
+   - Layer projects: shared-libs <- core <- applications
+   - Lower layers never depend on higher layers
+   - Review any cross-project import for direction violation
 
-**Phase impact:** Requires architectural decision in Phase 1. By Phase 3 (parallel agents), lack of state management causes daily production fires.
+3. VERSIONED INTERFACES for cross-project boundaries
+   - Shared libraries have semantic versions
+   - Projects pin to specific versions, update deliberately
+   - Breaking changes require coordinated release
+
+4. INDEPENDENT DEPLOYABILITY test
+   - Each project must be deployable without other projects
+   - Cross-project features are integration points, not dependencies
+```
+
+**Integration with existing v1.0:**
+- Add dependency direction rules to CLAUDE.md
+- Orchestrator validates dependency graph before dispatch
+- Sub-issue dependencies must not cross projects (or must be explicit)
 
 **Sources:**
-- [Multi-Agent Coordination Challenges](https://www.uipath.com/blog/ai/common-challenges-deploying-ai-agents-and-solutions-why-orchestration)
-- [Git Worktrees for Parallel Agents](https://medium.com/@lorenzozar/use-git-worktree-to-run-multiple-claude-code-agents-a1d47ef972d5)
+- [Multi-Agent Coordination Gone Wrong](https://galileo.ai/blog/multi-agent-coordination-strategies)
+- [Distributed Multi-Project Scheduling Research](https://www.tandfonline.com/doi/full/10.1080/01605682.2025.2457655)
+- [Monorepo vs Polyrepo Failures](https://medium.com/@Nexumo_/monorepo-vs-polyrepo-code-at-scale-in-2025-9b0743b68b99)
 
 ---
 
-### Pitfall 4: Observability Blindness
+### Pitfall 4: Trust Boundary Leakage
 
-**What goes wrong:** Running multi-agent systems without comprehensive tracing, structured logging, and decision visibility makes debugging distributed failures nearly impossible. Teams spend days reconstructing "what happened" from scattered logs.
+**What goes wrong:** A worker operating at Trust Level 3 in Project A switches to Project B where they should be Trust Level 1. Without per-workspace trust enforcement, they execute privileged operations in a project where they haven't earned trust.
+
+**Why it happens when scaling trust system:**
+- v1.0 trust ledger is single global file
+- Worker spawned for "trusted" project retains trust in "new" project
+- Orchestrator doesn't re-verify trust per workspace
+- Trust demotion in one project doesn't propagate to others
 
 **Consequences:**
-- Cannot answer "which agent made this decision?"
-- Inter-agent failures are invisible until catastrophic
-- Debugging requires manual log archaeology across systems
-- Cannot detect drift or hallucinations until user reports issues
-- Post-mortems become finger-pointing exercises
-- 70% of 2026 production issues stem from poor observability
+- Untested agent makes architectural decisions in new project
+- Rollback history from Project A doesn't protect Project B
+- Critical failure in Project B doesn't demote trust in Project A (should it?)
+- Human approval requirements bypassed for "trusted" agent in new context
 
-**Why it happens:**
-- Adding tracing "later" after core functionality works
-- Treating logging as afterthought instead of architecture requirement
-- Not instrumenting agent boundaries and decision points
-- Assuming LLM providers' logs are sufficient
-- Underestimating complexity of distributed systems debugging
+**Warning signs:**
+- Worker performs actions above expected trust level
+- No approval requested for first operations in new project
+- Trust ledger shows one level, but behavior suggests another
+- Rollbacks don't trigger trust demotion
 
 **Prevention:**
-- Implement OpenTelemetry from day one (standardized tracing)
-- Log ALL inter-agent transitions with full context
-- Capture decision provenance (why did agent X choose action Y?)
-- Use structured logging (JSON) not freeform text
-- Implement distributed tracing that follows work across agents
-- Track groundedness scores to detect hallucinations early
-- Deploy observability platform before first multi-agent workflow
+```
+1. PER-WORKSPACE TRUST LEDGERS
+   - Each workspace has own .planning/trust-ledger.md
+   - Trust level 0 for any agent in new workspace
+   - Trust must be earned per-project
 
-**Detection:**
-- Team asks "what happened?" more than "how do we fix?"
-- Bug reports include phrase "agent did something weird"
-- Debugging requires adding print statements to production
-- No way to replay a failed agent interaction
-- Mean time to diagnosis exceeds mean time to fix
+2. TRUST CONTEXT in every operation
+   - Hook validates: {workspace_id, agent_id, trust_level, operation}
+   - Reject operations exceeding workspace-specific trust
+   - Log trust level at every significant action
 
-**Phase impact:** Must be foundational (Phase 1). Adding observability to existing multi-agent system is like debugging a distributed system with printf() - theoretically possible, practically impossible.
+3. CROSS-WORKSPACE TRUST POLICIES
+   - Global trust caps per-workspace trust (can't exceed)
+   - Workspace trust independent (earned separately)
+   - Demotion can be global OR local (configurable)
+
+4. TRUST VERIFICATION at workspace switch
+   - Re-read workspace trust ledger
+   - Verify agent exists in workspace's history
+   - Default to Level 0 if no history
+```
+
+**Impact on v1.0 trust system:**
+- Trust ledger path becomes: `{workspace}/.planning/trust-ledger.md`
+- Worker startup must read workspace-specific ledger
+- Demotion triggers need workspace scope
 
 **Sources:**
-- [Agentic AI Observability 2026](https://www.n-ix.com/ai-agent-observability/)
-- [Top 5 AI Agent Observability Platforms](https://medium.com/@kamyashah2018/top-5-ai-agent-observability-platforms-in-2026-ead24bd1fe40)
-- [Why Observability is Essential for AI Agents](https://www.ibm.com/think/insights/ai-agent-observability)
+- [AI Agent Identity & Zero-Trust 2026](https://medium.com/@raktims2210/ai-agent-identity-zero-trust-the-2026-playbook-for-securing-autonomous-systems-in-banks-e545d077fdff)
+- [Multi-Tenant Agent Security - Prefactor](https://prefactor.tech/blog/mcp-security-multi-tenant-ai-agents-explained)
 
 ---
 
-### Pitfall 5: Insufficient Trust Boundaries and Sandboxing
+## High Severity Pitfalls
 
-**What goes wrong:** Agents running with excessive permissions (write access to main branch, unrestricted API calls, file system access) create security vulnerabilities and blast radius issues when agents misbehave or are compromised.
+Mistakes that cause significant delays, require manual intervention, or degrade system reliability.
 
-**Why it happens:**
-- Starting with "trust by default" for velocity
-- Treating agents as trusted internal employees
-- Not designing for "what if this agent is malicious?"
-- Sandboxing feels like premature optimization
+### Pitfall 5: Priority Starvation
+
+**What goes wrong:** High-priority Project A continuously consumes worker capacity, leaving lower-priority projects starved indefinitely. "Urgent" tasks always jump the queue, preventing "important" work from progressing.
+
+**Why it happens when managing multiple projects:**
+- v1.0 implicit single-project priority (everything is "current")
+- Multi-project needs explicit priority arbitration
+- Priority defined per-project, not globally comparable
+- No fairness mechanism ensures minimum progress per project
 
 **Consequences:**
-- Single agent compromise affects entire system
-- Agent errors cascade across projects
-- Cannot safely experiment with new agent behaviors
-- Audit trails insufficient for compliance
-- Recovery from agent mistakes requires manual intervention
-- Agents bypass traditional security silos
+- P2/P3 projects never make progress
+- Stakeholders of "lower priority" projects frustrated
+- Technical debt accumulates in neglected projects
+- Priority inflation (everything becomes P0 to get attention)
+
+**Warning signs:**
+- Same projects always in "waiting" state
+- Priority levels cluster at P0/P1
+- Stakeholder complaints about ignored projects
+- No commits in project for extended period despite tasks
 
 **Prevention:**
-- Implement capability-based security (explicit tokens for each resource)
-- Use WebAssembly (Wasm) for mathematically verifiable sandboxing
-- Deploy containers/microVMs to limit blast radius
-- Enforce least-privilege access (agents get minimum necessary permissions)
-- Implement pre-hooks (command sanitization, scope validation, resource limits)
-- Implement post-hooks (output validation, audit logging, escalation triggers)
-- Never allow agents to merge to main without human approval
-- Use conditional access policies to block risky agent operations
+```
+1. GLOBAL PRIORITY with per-project quotas
+   - Each project gets minimum worker-hours per period
+   - High priority can exceed quota, not eliminate others
+   - Starvation alarm: project with no activity > N days
 
-**Detection:**
-- Agents accessing resources outside their domain
-- Single agent failure requires full system restart
-- Cannot answer "what could this agent have accessed?"
-- Security audit reveals agents share credentials
-- Agent actions don't appear in audit logs
+2. AGING PRIORITY
+   - Tasks waiting longer get priority boost
+   - Prevents indefinite starvation
+   - Maximum wait time triggers escalation
 
-**Phase impact:** Trust architecture must be designed in Phase 1. Retrofitting security is exponentially harder after agents are deployed.
+3. EXPLICIT FAIRNESS POLICY
+   - Define in CLAUDE.md: minimum attention per project
+   - Orchestrator enforces during dispatch
+   - Visible in briefings: "Project X at risk of starvation"
+
+4. PRIORITY COMPARABILITY
+   - P0 in Project A == P0 in Project B
+   - Cross-project prioritization at dispatch time
+   - Human approval for priority overrides
+```
+
+**Integration with existing v1.0:**
+- Extend active-projects.md with priority + last-activity
+- Briefing generator flags starvation risks
+- Orchestrator dispatch includes fairness check
 
 **Sources:**
-- [AI Agent Security and Guardrails 2026](https://skywork.ai/blog/agentic-ai-safety-best-practices-2025-enterprise/)
-- [Best Code Execution Sandbox for AI Agents](https://northflank.com/blog/best-code-execution-sandbox-for-ai-agents)
-- [AI Agent Identity and Zero Trust 2026](https://medium.com/@raktims2210/ai-agent-identity-zero-trust-the-2026-playbook-for-securing-autonomous-systems-in-banks-e545d077fdff)
+- [Multi-Project Resource Scheduling - Epicflow](https://www.epicflow.com/blog/managing-resources-in-a-multi-project-environment-common-challenges-and-ways-to-solve-them/)
+- [Schedule Conflicts and Prevention](https://www.epicflow.com/blog/schedule-conflicts-their-causes-and-ways-to-prevent-them/)
 
 ---
 
-### Pitfall 6: Coordination Deadlocks and Infinite Loops
+### Pitfall 6: Status Aggregation Staleness
 
-**What goes wrong:** Agents get stuck in circular dependencies (A waits for B, B waits for C, C waits for A) or infinite retry loops, consuming resources without making progress. More than 40% of agentic AI projects face cancellation risk from coordination complexity.
+**What goes wrong:** CEO briefing shows status from 6 hours ago because aggregation polling is slow or caching is aggressive. Decisions made on stale data lead to duplicate work or missed blockers.
 
-**Why it happens:**
-- No coordinator/orchestrator pattern (agents negotiate peer-to-peer)
-- Missing timeout and circuit breaker logic
-- Retry strategies without exponential backoff or max attempts
-- No deadlock detection mechanisms
-- Agents optimizing local goals that conflict globally
+**Why it happens when aggregating across workspaces:**
+- v1.0 status from single source (immediate)
+- Multi-workspace requires polling multiple GitHub repos
+- Rate limits force caching, caching causes staleness
+- Different repos polled at different times (inconsistent snapshot)
+- Webhook delivery failures create gaps
 
 **Consequences:**
-- System hangs indefinitely with no visible error
-- Token costs accumulate without delivering value
-- CPU/memory exhaustion from spinning agents
-- Manual intervention required to break deadlocks
-- User work blocked waiting for agent completion
+- CEO assigns work already completed
+- Blockers not visible until much later
+- Conflicting tasks dispatched (both see "available")
+- Trust in system degrades ("briefing was wrong")
+
+**Warning signs:**
+- Briefing mentions issues already closed
+- Workers report completing tasks "already done"
+- Status timestamps significantly older than current time
+- Inconsistencies between GitHub UI and briefing
 
 **Prevention:**
-- Implement coordinator pattern (meta-agent manages workflow)
-- Set hard timeouts on all agent operations
-- Implement circuit breakers (stop calling failing dependencies)
-- Use exponential backoff with jitter for retries
-- Add deadlock detection (cycle detection in dependency graphs)
-- Enforce maximum retry limits (fail fast after N attempts)
-- Design for timeout propagation (parent aborts when child times out)
-- Implement health checks and automatic recovery
+```
+1. FRESHNESS METADATA in every status report
+   - Include: {data_as_of: timestamp, max_staleness: duration}
+   - Briefing warns if any source > max_staleness
+   - Human sees "data from 2 hours ago" not just status
 
-**Detection:**
-- Agent operations never complete
-- API rate limit errors in logs
-- Resource usage climbs without corresponding output
-- Same operation retries hundreds of times
-- Distributed traces show circular call patterns
+2. EVENT-DRIVEN over polling where possible
+   - GitHub webhooks for issue/PR events
+   - Fallback polling with known staleness
+   - Hybrid: webhooks + periodic reconciliation
 
-**Phase impact:** Coordination logic must be designed in Phase 2 (orchestration patterns). Becomes critical in Phase 3 (parallel agents) when deadlock probability increases exponentially.
+3. CONSISTENT SNAPSHOT strategy
+   - Aggregate at single point in time
+   - Wait for all sources before generating briefing
+   - Or: report per-source timestamps
+
+4. STALENESS ALERTS
+   - If any repo unreachable > N minutes: alert
+   - If staleness > threshold: flag in briefing
+   - If staleness > critical: block decisions requiring fresh data
+```
+
+**Integration with existing v1.0:**
+- Briefing template adds "Data freshness" section
+- GitHub polling script tracks last-successful-poll
+- Webhook receiver logs for audit trail
 
 **Sources:**
-- [AI Agent Orchestration Patterns](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns)
-- [12 Failure Patterns of Agentic Systems](https://www.concentrix.com/insights/blog/12-failure-patterns-of-agentic-ai-systems/)
+- [Status Page Aggregation Guide](https://statusgator.com/blog/status-page-aggregation/)
+- [Early Outage Detection - StatusGator](https://statusgator.com/features/status-aggregation)
+- [Databricks Dashboard Caching](https://docs.databricks.com/aws/en/dashboards/caching)
 
 ---
 
-### Pitfall 7: Cost Runaway Without FinOps Controls
+### Pitfall 7: Resource Contention Cascades
 
-**What goes wrong:** AI agent costs spiral out of control due to inefficient prompt engineering, redundant API calls, lack of rate limiting, and no budget guardrails. Token-based pricing fluctuates unpredictably - a minor prompt change can double costs overnight.
+**What goes wrong:** Two workers in different projects both need exclusive access to shared resource (e.g., staging environment, test database, deployment slot). One gets it, the other retries, causing cascading delays across multiple projects.
 
-**Why it happens:**
-- Treating API costs as "negligible" during development
-- No monitoring of per-agent cost attribution
-- Missing automatic circuit breakers for expensive operations
-- Inefficient prompts optimized for quality not cost
-- No caching strategy for repeated operations
+**Why it happens in multi-workspace:**
+- v1.0 single project has implicit resource exclusivity
+- Multi-project shares: CI runners, staging environments, deployment slots
+- No resource reservation system exists
+- Retry storms when multiple workers compete
 
 **Consequences:**
-- Production costs 2-5x development projections
-- CFO intervention halts project mid-flight
-- Team discovers cost explosion through monthly bill, not monitoring
-- Budget underestimation by 40-60% kills projects
-- External API costs exceed infrastructure costs
+- Workers stuck in retry loops burning tokens
+- Shared resources become bottleneck
+- Cascading delays (Project A delays B delays C)
+- Resource exhaustion (all workers waiting, none working)
+
+**Warning signs:**
+- High retry counts in worker logs
+- Shared resource at 100% utilization
+- Multiple projects blocked on same resource
+- Latency spikes correlate with multi-project activity
 
 **Prevention:**
-- Implement AI FinOps practices from day one
-- Track cost per agent, per operation, per token
-- Set up real-time alerts when costs exceed thresholds
-- Build automatic circuit breakers that pause expensive tools
-- Implement rate limiting per agent per time period
-- Use semantic caching for repeated queries
-- Build queuing systems that batch requests
-- Optimize prompts for token efficiency
-- Use smaller/faster models for routine operations
-- Forecast demand and use spot instances
+```
+1. RESOURCE REGISTRY
+   - Catalog shared resources with capacity limits
+   - Resources: CI runners, staging envs, API quotas, deployment slots
+   - Visible to orchestrator for scheduling
 
-**Detection:**
-- Monthly costs grow faster than user activity
-- Cost variance exceeds 20% week-over-week
-- Single agent consumes 80% of budget
-- Alerts fire after damage is done
-- Team cannot explain cost breakdown by agent/feature
+2. RESOURCE RESERVATION before dispatch
+   - Orchestrator reserves resources before assigning task
+   - Reservation has TTL (prevents indefinite hold)
+   - Worker confirms or releases reservation
 
-**Phase impact:** Cost instrumentation must exist in Phase 1. By Phase 4 (production scale), lack of FinOps controls leads to project cancellation.
+3. RESOURCE-AWARE SCHEDULING
+   - Don't dispatch tasks competing for same resource simultaneously
+   - Spread resource-heavy tasks across time
+   - Priority determines who gets constrained resource
+
+4. BACKOFF and CIRCUIT BREAKER
+   - Exponential backoff with jitter for contention
+   - Circuit breaker: if resource unavailable > N times, escalate
+   - Don't retry indefinitely (cap at 3 attempts)
+```
+
+**Integration with existing v1.0:**
+- Add `.worker/resources/registry.yaml`
+- Pre-dispatch hook checks resource availability
+- Worker reports resource acquisition/release
 
 **Sources:**
-- [AI Agent Cost Control and Budget Management](https://datagrid.com/blog/8-strategies-cut-ai-agent-costs)
-- [AI FinOps and Sovereign Infrastructure](https://analyticsweek.com/ai-finops-sovereign-infrastructure-costs/)
-- [How to Get AI Agent Budgets Right](https://www.cio.com/article/4099548/how-to-get-ai-agent-budgets-right-in-2026.html)
+- [Distributed Multi-Project Scheduling with Resource Failures](https://www.tandfonline.com/doi/full/10.1080/01605682.2025.2457655)
+- [Resource Conflicts in Multi-Project Environments](https://www.runn.io/blog/project-resource-conflicts)
+
+---
+
+### Pitfall 8: State Synchronization Race Conditions
+
+**What goes wrong:** Two operations in different workspaces both read shared state, make decisions, then write back. Both reads see old state, both writes succeed, but final state is inconsistent with either operation's intent.
+
+**Why it happens in multi-workspace:**
+- v1.0 sequential execution prevents races
+- Multi-project parallel execution creates race windows
+- GitHub API is eventually consistent, not ACID
+- No distributed locking for cross-project operations
+
+**Consequences:**
+- Issue assigned to two workers simultaneously
+- Project board shows impossible states
+- Commits reference issues in wrong state
+- Audit trail shows conflicting actions
+
+**Warning signs:**
+- Same issue appears in multiple workers' queues
+- GitHub API 409 Conflict errors
+- State differs between API queries seconds apart
+- Operations that "should have been blocked" succeeded
+
+**Prevention:**
+```
+1. OPTIMISTIC LOCKING with ETags
+   - Read includes ETag, write includes If-Match
+   - GitHub rejects write if ETag changed
+   - Worker retries with fresh read on conflict
+
+2. CLAIM-BASED ASSIGNMENT
+   - Atomic test-and-set for issue assignment
+   - Use GitHub API assignee + timestamp
+   - Worker verifies own claim before proceeding
+
+3. SINGLE WRITER per resource type
+   - Only orchestrator modifies cross-project state
+   - Workers modify only within their workspace
+   - Cross-workspace coordination via orchestrator
+
+4. IDEMPOTENT OPERATIONS
+   - Operations safe to retry: create-if-not-exists, set-to-value
+   - Avoid: increment, append (race-prone)
+   - Design all cross-project ops to be idempotent
+```
+
+**Integration with existing v1.0:**
+- Extend GitHub coordination to use ETags
+- Worker verifies assignment before starting task
+- Retry logic includes ETag refresh
+
+**Sources:**
+- [Synchronization in Distributed Systems - GeeksforGeeks](https://www.geeksforgeeks.org/distributed-systems/synchronization-in-distributed-systems/)
+- [Distributed System Synchronization Methods](https://www.meegle.com/en_us/topics/distributed-system/distributed-system-synchronization-methods)
 
 ---
 
 ## Moderate Pitfalls
 
-Mistakes that cause delays, technical debt, or require significant rework.
+Mistakes that cause delays or require workarounds but are recoverable.
 
-### Pitfall 8: Premature Multi-Agent Complexity
+### Pitfall 9: Coordination Overhead Explosion
 
-**What goes wrong:** Building a 10-agent orchestration system before validating that a single well-designed agent can't solve the problem. Over-engineering coordination when simple sequential or concurrent patterns would suffice.
+**What goes wrong:** Adding multi-project coordination creates so much overhead (status syncing, cross-project communication, approval workflows) that throughput decreases despite having "more projects." The coordination cost exceeds the parallelism benefit.
 
-**Why it happens:**
-- Multi-agent systems sound impressive
-- Fear of future scalability issues
-- Misunderstanding that "more agents = better"
-- Architecture astronaut syndrome
-
-**Prevention:**
-- Start with single agent, add specialization only when proven necessary
-- Use the "can one agent do this?" test before adding orchestration
-- Document the specific limitation that requires agent splitting
-- Teams should "start simple, add agents only when coordination is unavoidable"
-
-**Detection:**
-- Agents with minimal responsibility (mostly forwarding)
-- Complex coordination logic with simple underlying work
-- More time spent on orchestration than business logic
-- Cannot explain why each agent exists
-
-**Sources:**
-- [Multi-Agent Systems Complete Guide](https://dev.to/eira-wexford/how-to-build-multi-agent-systems-complete-2026-guide-1io6)
-
----
-
-### Pitfall 9: GitHub as Database Without Understanding Limits
-
-**What goes wrong:** Using GitHub issues, projects, and API as primary coordination layer without understanding rate limits, eventual consistency, sub-issue limitations (100 max), and synchronization challenges.
-
-**Why it happens:**
-- GitHub is "free" coordination layer
-- Assuming GitHub API behaves like a database
-- Not reading API documentation for edge cases
-- Underestimating synchronization complexity
+**Why it happens when scaling from v1.0:**
+- v1.0 optimized for single-project speed
+- Multi-project adds: status aggregation, priority arbitration, context switches
+- Each project boundary adds latency
+- Orchestrator becomes bottleneck
 
 **Consequences:**
-- Hit rate limits during high-activity periods
-- Sub-issues cap at 100 (hard limit)
-- Parent/child issue syncing requires custom automation
-- Project board states lag behind reality
-- Cannot filter by parent issue data in views
+- Total throughput decreases as projects increase
+- Most time spent coordinating, not executing
+- Simple tasks take longer than in v1.0 single-project
+- Team questions value of multi-project system
+
+**Warning signs:**
+- Coordination activities > 50% of worker time
+- Task latency increases with project count
+- Orchestrator queue grows faster than completion
+- Workers frequently idle waiting for coordination
 
 **Prevention:**
-- Design for GitHub's actual capabilities and limits
-- Implement caching layer for frequently accessed data
-- Use webhooks for event-driven updates (not polling)
-- Build custom sync logic for parent/child relationships
-- Stay within sub-issue limits or use alternative structures
-- Monitor rate limit headers proactively
+```
+1. MEASURE coordination overhead explicitly
+   - Track: time-in-coordination vs time-executing
+   - Alert if ratio exceeds threshold (e.g., 30%)
+   - Trend analysis: is overhead growing?
 
-**Detection:**
-- GitHub API 429 (rate limit) errors
-- Stale data in project views
-- Manual refresh required to see updates
-- Agents report different state than web UI shows
+2. MINIMIZE cross-project dependencies
+   - Prefer independent projects (parallel execution)
+   - Shared resources are coordination points (reduce them)
+   - Question every cross-project interaction
+
+3. BATCH coordination where possible
+   - Aggregate status updates (not one-at-a-time)
+   - Batch priority decisions (not per-task)
+   - Reduce round-trips
+
+4. THRESHOLD for adding projects
+   - Only add project if expected benefit > coordination cost
+   - Test with 2 projects before scaling to N
+   - Monitor overhead as projects added
+```
+
+**Integration with existing v1.0:**
+- Add coordination-time metrics to audit log
+- Briefing includes overhead trending
+- Cap concurrent projects until overhead proven acceptable
 
 **Sources:**
-- [Why GitHub Agent HQ Matters](https://www.eficode.com/blog/why-github-agent-hq-matters-for-engineering-teams-in-2026)
-- [GitHub Sub-issues Documentation](https://github.com/orgs/community/discussions/154148)
+- [Workflow Orchestration Pitfalls](https://avatu.in/blogs/5-common-workflow-orchestration-mistakes-and-ways-to-avoid-them/)
+- [Over-Orchestrating Simple Processes](https://appian.com/blog/acp/process-orchestration/enterprise-process-orchestration-mistakes)
 
 ---
 
-### Pitfall 10: Worktree Management Overhead
+### Pitfall 10: Observability Fragmentation
 
-**What goes wrong:** Running 5-10+ parallel agents with git worktrees creates management overhead (tracking active worktrees, cleanup policy, merge conflicts on shared files, resource consumption) that burns agent context and developer time.
+**What goes wrong:** Each workspace has its own logs, metrics, and traces. No unified view exists across workspaces, making cross-project debugging nearly impossible and hiding system-wide issues.
 
-**Why it happens:**
-- Worktrees solve isolation, seem like free parallelism
-- Not planning for worktree lifecycle management
-- Assuming worktrees eliminate all conflicts
-- Underestimating resource costs of N parallel Claude instances
+**Why it happens in multi-workspace:**
+- v1.0 observability designed for single workspace
+- Each submodule/workspace has own log paths
+- No correlation IDs across workspaces
+- Aggregation requires explicit tooling
 
 **Consequences:**
-- Confusion about which worktree contains what work
-- Stale worktrees accumulate (git storage bloat)
-- Merge conflicts on shared files (.github/, package.json) still happen
-- Integration complexity increases with agent count
-- High CPU/memory/API costs from parallel agents
+- Cannot trace request across workspace boundaries
+- System-wide issues appear as "random project failures"
+- Root cause analysis requires manually correlating logs
+- Debugging cross-project interactions takes hours
+
+**Warning signs:**
+- "It works in Project A but not B" with no visibility into why
+- Cross-project issues require manual log correlation
+- No single dashboard for system health
+- Same problem appears in multiple projects before noticed
 
 **Prevention:**
-- Use worktree orchestration tools (Worktrunk, Agentree)
-- Define cleanup policy (success = auto-cleanup, failure = preserve)
-- Establish file ownership conventions (prevent conflicts)
-- Set maximum parallel agent limit based on resources
-- Monitor costs of parallel execution
+```
+1. UNIFIED LOGGING format across all workspaces
+   - Common fields: timestamp, workspace_id, agent_id, trace_id
+   - Centralized log aggregation (or federated with common schema)
+   - Every log entry includes workspace context
 
-**Detection:**
-- git worktree list shows 20+ worktrees
-- Frequent "wrong directory" mistakes
-- Merge conflicts during agent integration
-- Resource exhaustion errors
-- Cost spikes correlate with parallel agent count
+2. CORRELATION IDs for cross-workspace operations
+   - Parent operation ID propagates to all child operations
+   - Visible in all workspaces involved
+   - Query: "show all operations for trace_id=X"
+
+3. AGGREGATED HEALTH DASHBOARD
+   - Single view: all workspaces, all agents, key metrics
+   - Drill-down to workspace-specific details
+   - Alerts roll up from workspace to system level
+
+4. CROSS-WORKSPACE TRACING
+   - Distributed tracing (OpenTelemetry) spans workspaces
+   - Trace shows: Orchestrator -> Workspace A -> Workspace B
+   - Latency attribution across boundaries
+```
+
+**Integration with existing v1.0:**
+- Standardize log format in `.worker/audit/`
+- Add workspace_id to all audit entries
+- Create cross-workspace health check script
 
 **Sources:**
-- [Git Worktrees for Parallel AI Agents](https://stevekinney.com/courses/ai-development/git-worktrees)
-- [Worktrunk CLI for Agent Workflows](https://github.com/max-sixty/worktrunk)
-- [Git Worktrees: Common Pitfalls](https://medium.com/@mike-welsh/supercharging-development-using-git-worktree-ai-agents-4486916435cb)
-
----
-
-### Pitfall 11: Framework Lock-in Without Understanding Tradeoffs
-
-**What goes wrong:** Choosing LangGraph, CrewAI, or AutoGen based on hype without understanding production implications. Each has sharp edges that become apparent only at scale.
-
-**Why it happens:**
-- Following "best framework" articles without context
-- Not prototyping with actual use case
-- Assuming framework choice doesn't matter
-- Underestimating framework learning curve
-
-**Framework-specific issues:**
-- **AutoGPT**: Largely obsolete for production use - autonomy at cost of reliability
-- **CrewAI**: Quick startup (hours to working system) but logging is "a huge pain" - normal print/log don't work inside Task, making debugging difficult
-- **LangGraph**: Superior for production (state management, checkpointing, observability) but requires 1-2 weeks to master graph concepts
-
-**Prevention:**
-- Prototype with actual use case before committing
-- Evaluate based on production needs, not demo quality
-- Understand team's graph/state management experience
-- Start simple, introduce graphs only when state becomes painful
-- Choose based on: LangGraph for production systems, CrewAI for rapid prototyping
-
-**Detection:**
-- Team struggles with framework concepts weeks in
-- Cannot debug agent behavior due to framework opacity
-- Framework limitations block required features
-- Considering rewrite to different framework
-
-**Sources:**
-- [LangGraph vs CrewAI vs AutoGPT 2026](https://agixtech.com/langgraph-vs-crewai-vs-autogpt/)
-- [First-hand Comparison of Frameworks](https://aaronyuqi.medium.com/first-hand-comparison-of-langgraph-crewai-and-autogen-30026e60b563)
-
----
-
-### Pitfall 12: Inter-Agent Misalignment
-
-**What goes wrong:** Agents proceed with wrong assumptions instead of seeking clarification (6.80% of failures), experience unexpected conversation resets (2.20% of failures), or coordinate themselves into chaos through conflicting local optimizations.
-
-**Why it happens:**
-- Agents optimizing local goals without global visibility
-- No validation of cross-agent assumptions
-- Missing clarification protocols
-- State synchronization failures
-
-**Prevention:**
-- Implement explicit validation steps at agent boundaries
-- Use coordinator pattern to resolve conflicts
-- Design clarification request protocols
-- Share global objectives with all agents
-- Implement consistency checks before actions
-
-**Detection:**
-- Agents undo each other's work
-- Conflicts require human intervention
-- Agents report completion but result is wrong
-- Distributed traces show contradictory decisions
-
-**Sources:**
-- [Why Multi-Agent Systems Fail](https://arxiv.org/pdf/2503.13657)
-
----
-
-## Minor Pitfalls
-
-Mistakes that cause annoyance or inefficiency but are fixable.
-
-### Pitfall 13: Poor Naming and Documentation
-
-**What goes wrong:** Agents, skills, and workflows have unclear names or missing documentation, making handoffs painful and onboarding slow.
-
-**Prevention:**
-- Use verb-noun format for commands (review-pr, deploy-staging)
-- Role-based names for agents (reviewer, architect)
-- Maintain CLAUDE.md with conventions
-- Document intent, not just mechanics
-
----
-
-### Pitfall 14: Inadequate Testing in Agentic Mode
-
-**What goes wrong:** Testing individual components in isolation but not testing full multi-agent orchestration flows. Integration failures emerge in production.
-
-**Prevention:**
-- Build end-to-end test scenarios for agent workflows
-- Use synthetic scenarios during development
-- Implement consistent evaluation metrics
-- Test failure modes (timeouts, conflicts, API errors)
-
-**Sources:**
+- [AI Agent Observability - IBM](https://www.ibm.com/think/insights/ai-agent-observability)
 - [Agentic AI Observability 2026](https://www.n-ix.com/ai-agent-observability/)
 
 ---
 
-### Pitfall 15: Model Selection Mismatch
+## Migration-Specific Pitfalls
 
-**What goes wrong:** Using Flash for deep reasoning or Deep Think for simple routing. Model selection isn't encoded in agent definitions, leading to runtime mismatches.
+Unique risks when adding multi-workspace to existing v1.0 system.
+
+### Pitfall 11: Backward Compatibility Breaks
+
+**What goes wrong:** v1.1 changes break v1.0 workflows. Existing commands, scripts, or conventions no longer work. Users discover breaks in production, not testing.
 
 **Prevention:**
-- Encode model selection in agent manifests (design-time decision)
-- Use Flash for fast routing and coordination
-- Use Pro for complex reasoning
-- Use Deep Think for architecture decisions
-- Document model selection rationale per agent
+- Explicit compatibility matrix: what v1.0 features still work
+- Migration guide with breaking changes documented
+- Feature flags to enable multi-workspace incrementally
+- Rollback path to v1.0 behavior if needed
+
+**Warning signs:**
+- v1.0 commands fail silently or with cryptic errors
+- Documentation no longer matches behavior
+- User reports "this used to work"
+
+---
+
+### Pitfall 12: Premature Multi-Project Before Single-Project Maturity
+
+**What goes wrong:** Rushing to add multi-project orchestration before v1.0 single-project workflows are battle-tested. Problems in single-project multiply across many projects.
+
+**Prevention:**
+- Milestone: v1.0 must handle 5+ sequential tasks without intervention
+- All v1.0 pitfalls (from existing PITFALLS.md) addressed first
+- Multi-project is amplifier: it amplifies good AND bad patterns
+- Test multi-project with 2 projects before scaling
+
+**Warning signs:**
+- Frequent v1.0 failures still occurring
+- Trust system not yet calibrated
+- Basic workflows require manual intervention
+
+---
+
+### Pitfall 13: Agent Manager Integration Assumptions
+
+**What goes wrong:** Assuming Anti-Gravity Agent Manager handles coordination automatically. Gaps between what Agent Manager provides and what orchestration needs creates silent failures.
+
+**Why this matters for v1.1:**
+- Agent Manager is external tool with own opinions
+- v1.0 workflows may conflict with Agent Manager patterns
+- Integration points unclear until tested
+- Documentation may not cover v1.0 integration specifically
+
+**Prevention:**
+- Map Agent Manager capabilities to v1.0 requirements explicitly
+- Identify gaps early through exploratory testing
+- Build adapters where conventions differ
+- Don't assume Agent Manager = complete solution
+
+**Warning signs:**
+- Agent Manager does X, but v1.0 expects Y
+- Unclear which system is "source of truth" for state
+- Features work in Agent Manager demo but not with v1.0
 
 ---
 
 ## Phase-Specific Warnings
 
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| **Phase 1: Foundation** | God Agent architecture | Design specialized agents from day one |
-| **Phase 1: Foundation** | No observability | Implement OpenTelemetry before first agent |
-| **Phase 1: Foundation** | Weak trust boundaries | Implement hook-based guardrails immediately |
-| **Phase 2: Orchestration** | Missing coordinator pattern | Build meta-agent for workflow management |
-| **Phase 2: Orchestration** | Poor context handoff design | Define explicit handoff schemas |
-| **Phase 3: Parallel Agents** | Shared mutable state | Implement claim-based resource assignment |
-| **Phase 3: Parallel Agents** | No deadlock detection | Add timeout and circuit breaker logic |
-| **Phase 3: Parallel Agents** | Worktree chaos | Deploy worktree management tooling |
-| **Phase 4: Production** | Cost explosion | Implement FinOps controls and alerts |
-| **Phase 4: Production** | Observability gaps | Deploy distributed tracing platform |
-| **Phase 5: Scale** | Rate limit hell | Implement caching and batching strategies |
-| **Phase 5: Scale** | GitHub API limits | Add webhook-based event architecture |
+| Phase | Likely Pitfall | Mitigation | Priority |
+|-------|----------------|------------|----------|
+| **Foundation** | Context contamination (#1) | Hard context reset, workspace ID everywhere | P0 |
+| **Foundation** | Trust boundary leakage (#4) | Per-workspace trust ledgers | P0 |
+| **Foundation** | Submodule state drift (#2) | Branch tracking, automation scripts | P0 |
+| **Foundation** | Observability fragmentation (#10) | Unified logging format | P1 |
+| **Orchestration** | Priority starvation (#5) | Fairness policies, aging priority | P1 |
+| **Orchestration** | Cross-project cycles (#3) | Dependency graph validation | P0 |
+| **Orchestration** | Status staleness (#6) | Freshness metadata, webhooks | P1 |
+| **Orchestration** | Coordination overhead (#9) | Overhead metrics, batching | P2 |
+| **Execution** | Resource contention (#7) | Resource registry, reservation | P1 |
+| **Execution** | State race conditions (#8) | Optimistic locking, idempotency | P1 |
+| **Integration** | Agent Manager gaps (#13) | Explicit mapping, adapters | P1 |
+| **Integration** | Backward compatibility (#11) | Compatibility matrix, feature flags | P1 |
 
 ---
 
-## Critical Success Factors
+## Critical Success Factors for v1.1
 
-To avoid these pitfalls, the system MUST have:
+To avoid these pitfalls, the multi-workspace system MUST have:
 
-1. **Specialized agents** (not god agents)
-2. **Observability from day one** (OpenTelemetry, structured logging)
-3. **Trust boundaries with hooks** (pre/post validation, sandboxing)
-4. **Explicit context handoff protocols** (summarization, size limits)
-5. **Coordinator pattern** (no peer-to-peer chaos)
-6. **State ownership boundaries** (no shared mutable state)
-7. **Cost instrumentation and alerts** (FinOps controls)
-8. **Deadlock and timeout logic** (circuit breakers)
-9. **Worktree lifecycle management** (automation tooling)
-10. **Framework choice aligned with team** (prototype first)
+1. **Workspace isolation enforced at every layer** (prompts, tools, state, trust)
+2. **Submodule automation scripts** (update, verify, push)
+3. **Per-workspace trust ledgers** (earned separately per project)
+4. **Dependency graph validation** (detect cycles before execution)
+5. **Priority fairness mechanisms** (no indefinite starvation)
+6. **Status freshness tracking** (know age of every data point)
+7. **Resource reservation system** (prevent contention cascades)
+8. **Optimistic locking for shared state** (race condition prevention)
+9. **Unified observability** (trace across workspace boundaries)
+10. **Explicit Agent Manager integration mapping** (no assumption gaps)
 
 ---
 
-## Research Confidence
+## Validation Checklist Before v1.1 Launch
 
-| Pitfall Category | Confidence | Source Quality |
-|-----------------|------------|----------------|
-| Architectural anti-patterns | HIGH | Multiple 2026 production post-mortems |
-| Cost management | HIGH | Industry FinOps research and enterprise budgets |
-| Observability | HIGH | Vendor platforms and adoption studies |
-| State coordination | HIGH | Academic research and framework docs |
-| GitHub integration | MEDIUM | Community discussions and GitHub docs |
-| Worktree management | HIGH | Multiple CLI tools and blog posts |
-| Framework tradeoffs | HIGH | Direct comparison articles from practitioners |
-| Security/trust | HIGH | Enterprise security guidelines and zero-trust papers |
+- [ ] Context isolation test: Run task in A, switch to B, verify no leakage
+- [ ] Submodule sync test: Push parent, verify submodule correct in clean clone
+- [ ] Trust isolation test: Trust 3 in A, verify Trust 0 in new project B
+- [ ] Priority fairness test: P3 project gets attention even with P0 activity
+- [ ] Status freshness test: Briefing shows accurate timestamps
+- [ ] Resource contention test: Two workers, one shared resource, no deadlock
+- [ ] Race condition test: Concurrent assignments to same issue, one wins cleanly
+- [ ] Cross-workspace trace test: Operation spanning A and B visible in single trace
+- [ ] Backward compatibility test: All v1.0 commands work unchanged
+- [ ] Agent Manager integration test: Known gaps documented and handled
 
 ---
 
 ## Sources
 
-- [How to Build Multi-Agent Systems: Complete 2026 Guide](https://dev.to/eira-wexford/how-to-build-multi-agent-systems-complete-2026-guide-1io6)
-- [Common AI Agent Development Mistakes](https://www.wildnetedge.com/blogs/common-ai-agent-development-mistakes-and-how-to-avoid-them)
-- [From Solo Act to Orchestra: Why Multi-Agent Systems Need Real Architecture](https://www.cloudgeometry.com/blog/from-solo-act-to-orchestra-why-multi-agent-systems-demand-real-architecture)
-- [AI Agent Orchestration Patterns - Azure Architecture Center](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns)
-- [Common Challenges Deploying AI Agents - UiPath](https://www.uipath.com/blog/ai/common-challenges-deploying-ai-agents-and-solutions-why-orchestration)
-- [Why Multi-Agent LLM Systems Fail - Research Paper](https://arxiv.org/pdf/2503.13657)
-- [12 Failure Patterns of Agentic AI Systems](https://www.concentrix.com/insights/blog/12-failure-patterns-of-agentic-ai-systems/)
-- [2025 Overpromised AI Agents, 2026 Demands Agentic Engineering](https://medium.com/generative-ai-revolution-ai-native-transformation/2025-overpromised-ai-agents-2026-demands-agentic-engineering-5fbf914a9106)
-- [The 2025 AI Agent Report: Why AI Pilots Fail in Production](https://composio.dev/blog/why-ai-agent-pilots-fail-2026-integration-roadmap)
-- [LangGraph vs CrewAI vs AutoGPT 2026](https://agixtech.com/langgraph-vs-crewai-vs-autogpt/)
-- [First-hand Comparison of Frameworks](https://aaronyuqi.medium.com/first-hand-comparison-of-langgraph-crewai-and-autogen-30026e60b563)
-- [7 Agentic AI Trends to Watch in 2026](https://machinelearningmastery.com/7-agentic-ai-trends-to-watch-in-2026/)
-- [Why GitHub Agent HQ Matters for Engineering Teams](https://www.eficode.com/blog/why-github-agent-hq-matters-for-engineering-teams-in-2026)
-- [Agentic AI Safety & Guardrails 2025 Best Practices](https://skywork.ai/blog/agentic-ai-safety-best-practices-2025-enterprise/)
-- [Best Code Execution Sandbox for AI Agents](https://northflank.com/blog/best-code-execution-sandbox-for-ai-agents)
-- [AI Agent Identity & Zero-Trust 2026 Playbook](https://medium.com/@raktims2210/ai-agent-identity-zero-trust-the-2026-playbook-for-securing-autonomous-systems-in-banks-e545d077fdff)
-- [Top 5 AI Agent Observability Platforms 2026](https://medium.com/@kamyashah2018/top-5-ai-agent-observability-platforms-in-2026-ead24bd1fe40)
-- [AI Agent Observability - IBM](https://www.ibm.com/think/insights/ai-agent-observability)
-- [AI Agent Observability - N-iX](https://www.n-ix.com/ai-agent-observability/)
-- [Ensuring Reliability in AI Agents](https://medium.com/@kamyashah2018/ensuring-reliability-in-ai-agents-preventing-drift-and-hallucinations-in-production-4b8f8600ec69)
-- [Reducing Hallucinations with Semantic Cache - AWS](https://aws.amazon.com/blogs/machine-learning/reducing-hallucinations-in-llm-agents-with-a-verified-semantic-cache-using-amazon-bedrock-knowledge-bases/)
-- [AI FinOps and Sovereign Infrastructure Costs](https://analyticsweek.com/ai-finops-sovereign-infrastructure-costs/)
-- [How to Get AI Agent Budgets Right in 2026](https://www.cio.com/article/4099548/how-to-get-ai-agent-budgets-right-in-2026.html)
-- [8 Strategies to Cut AI Agent Costs](https://datagrid.com/blog/8-strategies-cut-ai-agent-costs)
-- [Git Worktrees for Parallel AI Development](https://stevekinney.com/courses/ai-development/git-worktrees)
-- [Worktrunk - Git Worktree CLI for Agents](https://github.com/max-sixty/worktrunk)
-- [Use Git Worktree to Run Multiple Claude Code Agents](https://medium.com/@lorenzozar/use-git-worktree-to-run-multiple-claude-code-agents-a1d47ef972d5)
-- [Supercharging Development: Git Worktree & AI Agents](https://medium.com/@mike-welsh/supercharging-development-using-git-worktree-ai-agents-4486916435cb)
-- [How Git Worktrees Changed My AI Agent Workflow](https://nx.dev/blog/git-worktrees-ai-agents)
+**Multi-Tenant & Isolation:**
+- [Multi-Tenant AI Leakage](https://layerxsecurity.com/generative-ai/multi-tenant-ai-leakage/) - Context window bleeding patterns
+- [AWS Bedrock Tenant Isolation](https://aws.amazon.com/blogs/machine-learning/implementing-tenant-isolation-using-agents-for-amazon-bedrock-in-a-multi-tenant-environment/) - Tenant ID enforcement
+- [MCP Security Multi-Tenant](https://prefactor.tech/blog/mcp-security-multi-tenant-ai-agents-explained) - Protocol-level isolation
+
+**Git Submodules:**
+- [Git Submodules Official](https://git-scm.com/book/en/v2/Git-Tools-Submodules) - Detached HEAD behavior
+- [Submodules Best Practices](https://gist.github.com/slavafomin/08670ec0c0e75b500edbaa5d43a5c93c) - Automation patterns
+- [Reasons to Avoid Submodules](https://blog.timhutt.co.uk/against-submodules/) - Known pain points
+
+**Multi-Agent Coordination:**
+- [Multi-Agent Coordination Strategies](https://galileo.ai/blog/multi-agent-coordination-strategies) - Failure patterns
+- [Why Multi-Agent Systems Fail](https://arxiv.org/pdf/2503.13657) - Taxonomy of failures
+- [Azure AI Agent Patterns](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns) - Anti-patterns
+
+**Multi-Project Scheduling:**
+- [Distributed Multi-Project Scheduling](https://www.tandfonline.com/doi/full/10.1080/01605682.2025.2457655) - Resource failure handling
+- [Multi-Project Resource Planning](https://www.epicflow.com/blog/managing-resources-in-a-multi-project-environment-common-challenges-and-ways-to-solve-them/) - Prioritization
+- [Schedule Conflicts Prevention](https://www.epicflow.com/blog/schedule-conflicts-their-causes-and-ways-to-prevent-them/) - Starvation patterns
+
+**Distributed Systems:**
+- [Synchronization in Distributed Systems](https://www.geeksforgeeks.org/distributed-systems/synchronization-in-distributed-systems/) - Race conditions
+- [Split-Brain Scenarios](https://www.meegle.com/en_us/topics/distributed-system/distributed-system-synchronization) - Consistency issues
+
+**Orchestration Overhead:**
+- [Workflow Orchestration Pitfalls](https://avatu.in/blogs/5-common-workflow-orchestration-mistakes-and-ways-to-avoid-them/) - Over-orchestration
+- [Enterprise Process Orchestration](https://appian.com/blog/acp/process-orchestration/enterprise-process-orchestration-mistakes) - Coordination tax
+- [Monorepo vs Polyrepo](https://medium.com/@Nexumo_/monorepo-vs-polyrepo-code-at-scale-in-2025-9b0743b68b99) - Where complexity shifts
+
+**Observability:**
+- [AI Agent Observability - IBM](https://www.ibm.com/think/insights/ai-agent-observability) - Cross-agent tracing
+- [Agentic AI Observability 2026](https://www.n-ix.com/ai-agent-observability/) - Platform requirements
 
 ---
 
-*Last updated: 2026-01-26*
+*Last updated: 2026-01-29*
 *Research confidence: HIGH*
-*Primary sources: 2026 production deployments, enterprise post-mortems, academic research*
+*Focus: Migration pitfalls from single-workspace (v1.0) to multi-workspace (v1.1)*

@@ -1,1026 +1,862 @@
-# Architecture Patterns: Multi-Agent AI Orchestration Systems
+# Architecture: Multi-Workspace Orchestration
 
-**Domain:** Multi-Agent AI Orchestration / AI-Powered Development Agency
-**Researched:** 2026-01-26
-**Confidence:** HIGH (verified via official Microsoft, Google, and IBM documentation)
+**Domain:** Multi-Repo AI Agent Orchestration
+**Researched:** 2026-01-29
+**Confidence:** MEDIUM-HIGH (based on existing v1.0 codebase analysis + industry patterns)
 
-## Recommended Architecture
+## Executive Summary
 
-Multi-agent AI orchestration systems in 2026 follow a **layered, hierarchical architecture** with standardized communication protocols. The recommended approach combines:
+Multi-workspace orchestration extends the existing single-workspace architecture by introducing a **workspace registry** and **cross-workspace dispatch** mechanism. The parent workspace (Manifest Automations) becomes the orchestration hub, with child workspaces (repos as submodules) maintaining their own GSD setup while receiving dispatched work from the parent orchestrator.
 
-1. **Hierarchical orchestration** for strategic coordination (Gemini orchestrators)
-2. **Protocol-based communication** (A2A for agent-to-agent, MCP for tool integration)
-3. **External source-of-truth** (GitHub for state management)
-4. **Hook-based guardrails** (trust enforcement at execution boundaries)
+The recommended approach uses **repository_dispatch** events for cross-workspace triggering, **parent constraint inheritance** for trust propagation, and **aggregated status polling** via a unified dashboard skill.
+
+---
+
+## Current Architecture (v1.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Layer 7: CEO Interface (Mission Control)                       │
-│  └─ Anti-Gravity Inbox, Briefings, Decision Points              │
+│  CEO (Human)                                                     │
+│  └─ Anti-Gravity Mission Control (inbox/briefings)               │
 ├─────────────────────────────────────────────────────────────────┤
-│  Layer 6: Orchestration Agents (Gemini Flash/Pro/Deep Think)    │
-│  └─ Task decomposition, routing, status aggregation             │
-│  └─ Communicate via: A2A protocol                               │
+│  GEMINI ORCHESTRATOR (single workspace)                          │
+│  └─ Intent classification, task decomposition                    │
+│  └─ Dispatch via: scripts/orchestrator/dispatch.sh               │
+│  └─ Status via: scripts/orchestrator/aggregate.sh                │
 ├─────────────────────────────────────────────────────────────────┤
-│  Layer 5: Coordination Layer (GitHub as Source of Truth)        │
-│  └─ Issues (work items), Projects (kanban), PRs (completions)   │
-│  └─ Audit trail, version control, state persistence             │
+│  GITHUB (coordination layer - single repo)                       │
+│  └─ Issues = work items                                          │
+│  └─ Projects = kanban state                                      │
+│  └─ Labels = worker state machine                                │
 ├─────────────────────────────────────────────────────────────────┤
-│  Layer 4: Worker Agents (Claude via GSD)                        │
-│  └─ Execute commands/skills, spawn sub-agents                   │
-│  └─ Report via: gh CLI to GitHub                                │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 3: Tool Integration (MCP Protocol)                       │
-│  └─ File system, terminals, APIs, external services             │
-│  └─ Standardized tool access across all agents                  │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 2: Trust & Guardrails (Hook System)                      │
-│  └─ Pre-hooks: Command sanitization, scope validation           │
-│  └─ Post-hooks: Output validation, audit logging                │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 1: Foundation (Agent Definitions + Infrastructure)       │
-│  └─ YAML manifests, model selection, tool permissions           │
-│  └─ Worktree management, git submodules                         │
+│  CLAUDE WORKERS (GSD-enabled)                                    │
+│  └─ scripts/worker/execute.sh --issue N                          │
+│  └─ Worktrees for isolation                                      │
+│  └─ Sub-agents for parallelization                               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Data Flow Direction:**
-- **Top-down:** Human intent → Orchestrators → Workers → Tools
-- **Bottom-up:** Results → GitHub → Orchestrators → Mission Control
-- **Horizontal:** Agent-to-agent via A2A protocol, agent-to-tool via MCP
+**Key v1.0 patterns:**
+- GitHub as single source of truth (labels, issues, PRs)
+- Exit-and-resume for approvals (no polling)
+- Hook-based trust enforcement
+- Stateless orchestrator (queries GitHub for state)
+
+---
+
+## Target Architecture (v1.1)
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  CEO (Human)                                                              │
+│  └─ Anti-Gravity Agent Manager (unified inbox, multi-workspace view)      │
+├──────────────────────────────────────────────────────────────────────────┤
+│  PARENT WORKSPACE: Manifest Automations                                   │
+│  ├─ Gemini Orchestrator (cross-workspace aware)                          │
+│  │   └─ Intent classification with workspace targeting                   │
+│  │   └─ Workspace registry queries                                       │
+│  │   └─ Cross-workspace dispatch coordination                            │
+│  ├─ Workspace Registry (.planning/workspaces/registry.yaml)              │
+│  │   └─ Registered child workspaces with metadata                        │
+│  │   └─ Trust levels per workspace                                       │
+│  │   └─ GitHub repo references                                           │
+│  ├─ Status Aggregator                                                    │
+│  │   └─ Polls child workspace status                                     │
+│  │   └─ Unified dashboard generation                                     │
+│  │   └─ Inbox message routing                                            │
+│  └─ Parent Trust Constraints                                             │
+│      └─ Ceiling for all child workspace operations                       │
+├──────────────────────────────────────────────────────────────────────────┤
+│  CHILD WORKSPACE A: project-alpha (submodule)                            │
+│  ├─ Own GSD setup (.claude/skills/, scripts/worker/)                     │
+│  ├─ Own GitHub repo (issues, PRs, projects)                              │
+│  ├─ Inherited trust constraints from parent                              │
+│  └─ Status reporter (exports to parent aggregator)                       │
+├──────────────────────────────────────────────────────────────────────────┤
+│  CHILD WORKSPACE B: project-beta (submodule)                             │
+│  ├─ Own GSD setup                                                        │
+│  ├─ Own GitHub repo                                                      │
+│  ├─ Inherited trust constraints                                          │
+│  └─ Status reporter                                                      │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Component Boundaries
 
-### Layer 7: CEO Interface
-| Responsibility | Inputs | Outputs | Communicates With |
-|----------------|--------|---------|-------------------|
-| Human decision-making and strategic direction | Status reports, briefings, escalations | High-level directives, approvals | Layer 6 (Orchestrators) |
-| Mission visibility | Aggregated task completions, blockers, anomalies | Course corrections, priority changes | Anti-Gravity IDE interface |
+### New Component: Workspace Registry
 
-**Boundaries:**
-- Does NOT write code or execute tasks directly
-- Does NOT manage individual agent conversations
-- DOES provide vision, decisions, approvals
+| Responsibility | Inputs | Outputs | Location |
+|----------------|--------|---------|----------|
+| Track registered child workspaces | Registration commands, submodule discovery | Workspace metadata (path, repo, trust level) | `.planning/workspaces/registry.yaml` |
+| Resolve workspace from intent | Natural language workspace reference | Workspace ID and path | Query function |
+| Validate workspace health | Workspace path | Health status (GSD present, scripts functional) | Health check script |
 
----
-
-### Layer 6: Orchestration Agents
-| Responsibility | Inputs | Outputs | Communicates With |
-|----------------|--------|---------|-------------------|
-| Task decomposition and routing | CEO directives, GitHub issue state | Dispatched work items, status summaries | Layer 5 (GitHub), Layer 4 (Workers), Layer 7 (CEO) |
-| Progress monitoring and aggregation | Worker completions, PR status, blockers | Daily briefings, escalations | A2A protocol for agent coordination |
-| Dynamic agent spawning | Workload assessment | Sub-agent creation/cleanup | Worker agents via dispatch commands |
-
-**Model Selection:**
-- **Flash:** Simple routing, status aggregation, routine decisions (fast)
-- **Pro:** Complex task decomposition, multi-step planning (balanced)
-- **Deep Think:** Strategic planning, ambiguous problems (deliberate)
-
-**Boundaries:**
-- Does NOT execute code directly
-- Does NOT access tools directly (delegates to workers)
-- DOES coordinate, route, monitor, report
-
----
-
-### Layer 5: Coordination Layer (GitHub)
-| Responsibility | Inputs | Outputs | Communicates With |
-|----------------|--------|---------|-------------------|
-| Single source of truth for project state | gh CLI commands from workers/orchestrators | Issue state, PR diffs, project status | All agent layers (via gh CLI) |
-| Audit trail and version control | Commits, PR reviews, issue updates | Git history, blame, timeline | Git hooks for trust enforcement |
-| Work item management | Issue creation, status changes, assignments | Kanban view, dependency tracking | Human reviewers, automation |
-
-**Why GitHub:**
-- Auditable (every action logged)
-- Human-readable (issues/PRs not proprietary formats)
-- Standard tooling (gh CLI, git, webhooks)
-- External to agent system (agents can fail, GitHub persists)
-
-**Boundaries:**
-- Does NOT execute agent logic
-- Does NOT make decisions
-- DOES persist ALL state changes
-
----
-
-### Layer 4: Worker Agents (Claude)
-| Responsibility | Inputs | Outputs | Communicates With |
-|----------------|--------|---------|-------------------|
-| Execute commands, skills, and sub-tasks | Dispatched work from orchestrators | Code, PRs, issue updates, status reports | Layer 3 (Tools via MCP), Layer 5 (GitHub via gh CLI), Layer 6 (Orchestrators via status updates) |
-| Spawn sub-agents for parallelization | Task complexity assessment | Parallel execution of subtasks | Sub-agents (scoped, constrained) |
-| Report progress and results | Task execution state | gh issue comments, PR creation, status changes | GitHub coordination layer |
-
-**Dispatch Mechanism:**
-```bash
-# Orchestrator invokes worker via cross-surface terminal control
-claude-code --prompt "Implement auth module per spec" \
-            --skill "@/agents/skills/backend-service" \
-            --context "issue:GH-142"
-```
-
-**Boundaries:**
-- Does NOT make strategic decisions (executes defined plans)
-- Does NOT coordinate across projects (orchestrators do that)
-- DOES execute, report, spawn scoped sub-agents
-
----
-
-### Layer 3: Tool Integration (MCP)
-| Responsibility | Inputs | Outputs | Communicates With |
-|----------------|--------|---------|-------------------|
-| Standardized tool/API access | Agent tool requests via MCP protocol | File operations, terminal execution, API responses | Worker agents, external systems |
-| Abstract implementation details | Tool invocation requests | Normalized responses | File system, terminals, APIs |
-
-**Why MCP:**
-- Universal adapter for tools, APIs, data sources
-- Eliminates custom integration code per agent
-- Standardizes capability access
-
-**Boundaries:**
-- Does NOT make decisions about WHAT to execute
-- Does NOT track state (agents/GitHub do that)
-- DOES provide standardized access to capabilities
-
----
-
-### Layer 2: Trust & Guardrails
-| Responsibility | Inputs | Outputs | Communicates With |
-|----------------|--------|---------|-------------------|
-| Enforce execution constraints | Pre-execution: Command payloads | Sanitized/rejected commands | Worker agents, orchestrators |
-| Validate outcomes | Post-execution: Command results | Audit logs, escalation triggers | Audit systems, trust ledger |
-
-**Hook Architecture:**
-- **Pre-hooks:** Command sanitization, scope validation, resource limits
-- **Post-hooks:** Output validation, audit logging, escalation triggers
-
-**Why Hooks (not runtime permissions):**
-- Enforcement at execution boundaries
-- Simpler than runtime permission systems
-- Auditable decision trail
-- Fail-safe (hook failure = operation blocked)
-
-**Boundaries:**
-- Does NOT execute business logic
-- Does NOT store state
-- DOES enforce constraints, log actions
-
----
-
-### Layer 1: Foundation
-| Responsibility | Inputs | Outputs | Communicates With |
-|----------------|--------|---------|-------------------|
-| Agent identity and capabilities | YAML manifests | Agent definitions, tool permissions | All layers (configuration source) |
-| Project isolation | Git submodules, worktrees | Isolated development environments | Version control, file system |
-
-**Agent Manifest Structure:**
+**Data structure:**
 ```yaml
-name: code-reviewer
-model: gemini-2.0-flash
-tools:
-  - gh_cli
-  - file_read
-description: Reviews PRs for style compliance and logic errors
-triggers:
-  - workflow: pr-review
-  - skill: quick-audit
+# .planning/workspaces/registry.yaml
+version: 1
+workspaces:
+  project-alpha:
+    path: ./projects/project-alpha
+    github: owner/project-alpha
+    trust_level: 2
+    status: active
+    last_sync: 2026-01-29T12:00:00Z
+    capabilities:
+      - gsd
+      - worker-parallelization
+      - trust-guardrails
+
+  project-beta:
+    path: ./projects/project-beta
+    github: owner/project-beta
+    trust_level: 2
+    status: active
+    last_sync: 2026-01-29T12:00:00Z
+    capabilities:
+      - gsd
 ```
 
-**Worktree Strategy:**
-- **Dynamic creation:** Per task, per agent
-- **Outcome-based cleanup:** Success = auto-cleanup, failure = preserve for debugging
-- **Isolation:** Prevents merge conflicts during parallel work
+**Boundaries:**
+- Does NOT execute work in child workspaces
+- Does NOT manage child workspace internal state
+- DOES track which workspaces exist and their metadata
+- DOES resolve workspace references for dispatch
+
+---
+
+### Modified Component: Orchestrator Skill
+
+**Changes from v1.0:**
+
+| v1.0 Behavior | v1.1 Behavior |
+|---------------|---------------|
+| Single workspace dispatch | Multi-workspace dispatch with workspace targeting |
+| Local issue creation | Issue creation in target workspace's repo |
+| Local status aggregation | Cross-workspace status aggregation |
+| Implicit single workspace | Explicit workspace selection (defaults to parent) |
+
+**New intent classification patterns:**
+
+| Pattern | Classification | Example |
+|---------|---------------|---------|
+| `in {workspace}` | DISPATCH with workspace target | "Build auth module in project-alpha" |
+| `across all workspaces` | DISPATCH to all | "Update dependencies across all workspaces" |
+| `status of {workspace}` | STATUS with workspace filter | "Status of project-beta" |
+| `portfolio status` | STATUS aggregated | "Portfolio status" |
+
+**New orchestrator functions:**
+
+```bash
+# Dispatch to child workspace
+dispatch_to_workspace() {
+  local workspace_id="$1"
+  local issue_number="$2"
+
+  # Resolve workspace path
+  local ws_path=$(get_workspace_path "$workspace_id")
+  local ws_repo=$(get_workspace_repo "$workspace_id")
+
+  # Create issue in child repo
+  gh issue create --repo "$ws_repo" --title "$TITLE" --body "$BODY"
+
+  # Trigger child workspace worker
+  # Option A: Direct invocation (if same machine)
+  # Option B: repository_dispatch (if remote)
+  # Option C: gh workflow run (if GH Actions runner)
+}
+
+# Aggregate status across workspaces
+aggregate_portfolio_status() {
+  local workspaces=$(list_workspaces)
+  local results=""
+
+  for ws in $workspaces; do
+    local ws_repo=$(get_workspace_repo "$ws")
+    local ws_status=$(query_workspace_status "$ws_repo")
+    results+="$ws: $ws_status\n"
+  done
+
+  format_portfolio_summary "$results"
+}
+```
 
 **Boundaries:**
-- Does NOT execute operations
-- Does NOT change at runtime
-- DOES define identity, permissions, structure
+- DOES coordinate work across workspaces
+- DOES route issues to correct repos
+- DOES aggregate status from multiple repos
+- Does NOT execute directly in child workspaces (dispatch only)
+
+---
+
+### New Component: Cross-Workspace Dispatch Mechanism
+
+Three dispatch modes, selected based on workspace configuration:
+
+#### Mode 1: Direct Invocation (Local Submodules)
+
+For child workspaces present as git submodules on the same machine.
+
+```
+Parent Orchestrator
+    │
+    ├─ Resolve workspace path from registry
+    ├─ cd to child workspace
+    └─ Invoke: scripts/worker/execute.sh --issue N
+```
+
+**Pros:** Fastest, no network latency, shared file system
+**Cons:** Requires submodules checked out, same machine
+**When:** Development/testing, small deployments
+
+```bash
+# scripts/orchestrator/dispatch-workspace.sh
+dispatch_local() {
+  local workspace_id="$1"
+  local issue_number="$2"
+
+  local ws_path=$(yq ".workspaces.$workspace_id.path" "$REGISTRY_FILE")
+
+  if [ ! -d "$ws_path" ]; then
+    echo "[error] Workspace not found: $ws_path"
+    return 1
+  fi
+
+  # Execute in child workspace
+  (cd "$ws_path" && scripts/worker/execute.sh --issue "$issue_number")
+}
+```
+
+#### Mode 2: Repository Dispatch (Remote Repos)
+
+For child workspaces in separate repositories with GitHub Actions.
+
+```
+Parent Orchestrator
+    │
+    ├─ Create issue in child repo (gh issue create --repo owner/child)
+    ├─ Send repository_dispatch event
+    │   └─ POST /repos/owner/child/dispatches
+    │   └─ event_type: "worker-dispatch"
+    │   └─ client_payload: { issue: N, parent_trace_id: X }
+    │
+    ▼
+Child Repo (GitHub Actions)
+    │
+    ├─ Workflow triggered by repository_dispatch
+    └─ Runs: scripts/worker/execute.sh --issue N
+```
+
+**Pros:** Works across organizations, scalable, auditable
+**Cons:** Requires GH Actions setup, API latency
+**When:** Production, distributed teams, separate orgs
+
+```bash
+# scripts/orchestrator/dispatch-workspace.sh
+dispatch_remote() {
+  local workspace_id="$1"
+  local issue_number="$2"
+
+  local ws_repo=$(yq ".workspaces.$workspace_id.github" "$REGISTRY_FILE")
+  local trace_id=$(generate_trace_id)
+
+  # Trigger via repository_dispatch
+  gh api "repos/$ws_repo/dispatches" \
+    --method POST \
+    -f event_type="worker-dispatch" \
+    -f client_payload="{\"issue\": $issue_number, \"parent_trace_id\": \"$trace_id\"}"
+
+  # Log dispatch for tracking
+  log_dispatch "cross_workspace" \
+    --arg workspace "$workspace_id" \
+    --arg issue "$issue_number" \
+    --arg trace_id "$trace_id"
+}
+```
+
+**Child workflow (in child repo):**
+```yaml
+# .github/workflows/worker-dispatch.yml
+name: Worker Dispatch
+on:
+  repository_dispatch:
+    types: [worker-dispatch]
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute worker
+        run: scripts/worker/execute.sh --issue ${{ github.event.client_payload.issue }}
+        env:
+          PARENT_TRACE_ID: ${{ github.event.client_payload.parent_trace_id }}
+```
+
+#### Mode 3: Workflow Dispatch (Manual/Scheduled)
+
+For child workspaces with existing workflows that accept inputs.
+
+```bash
+# Trigger existing workflow with inputs
+gh workflow run worker.yml \
+  --repo owner/child \
+  -f issue_number=42
+```
+
+**Recommendation:** Start with Mode 1 (local submodules) for initial development, add Mode 2 (repository_dispatch) for production deployments.
+
+---
+
+### Modified Component: Status Aggregator
+
+**Changes from v1.0:**
+
+| v1.0 | v1.1 |
+|------|------|
+| Query single repo | Query multiple repos from registry |
+| Local issue labels | Remote issue labels via `gh --repo` |
+| Single format output | Unified portfolio view + per-workspace drilldown |
+
+**New aggregation function:**
+
+```bash
+# scripts/orchestrator/aggregate.sh (extended)
+aggregate_portfolio() {
+  local format="${1:-table}"
+  local workspaces=$(yq '.workspaces | keys | .[]' "$REGISTRY_FILE")
+
+  local portfolio_data=""
+
+  for ws in $workspaces; do
+    local ws_repo=$(yq ".workspaces.$ws.github" "$REGISTRY_FILE")
+    local ws_status=$(get_workspace_summary "$ws_repo")
+
+    # Collect: executing, awaiting, complete, failed counts
+    portfolio_data+=$(format_workspace_row "$ws" "$ws_status")
+  done
+
+  case "$format" in
+    oneliner) format_portfolio_oneliner "$portfolio_data" ;;
+    table)    format_portfolio_table "$portfolio_data" ;;
+    detailed) format_portfolio_detailed "$portfolio_data" ;;
+  esac
+}
+
+get_workspace_summary() {
+  local repo="$1"
+
+  # Query issue counts by label
+  local executing=$(gh issue list --repo "$repo" --label "worker:executing" --json number --jq 'length')
+  local awaiting=$(gh issue list --repo "$repo" --label "worker:awaiting-approval" --json number --jq 'length')
+  local complete=$(gh issue list --repo "$repo" --label "worker:complete" --state closed --json number --jq 'length')
+  local failed=$(gh issue list --repo "$repo" --label "worker:failed" --json number --jq 'length')
+
+  echo "$executing,$awaiting,$complete,$failed"
+}
+```
+
+**Portfolio table format:**
+
+```
+Portfolio Status
+================
+
+Workspace       | Exec | Wait | Done | Fail | Health
+----------------|------|------|------|------|--------
+project-alpha   |  2   |  1   |  15  |  0   | [OK]
+project-beta    |  1   |  0   |   8  |  1   | [--]
+manifest-auto   |  0   |  0   |  36  |  0   | [OK]
+
+Totals: 3 executing, 1 awaiting approval, 59 complete, 1 failed
+```
+
+---
+
+### Modified Component: Trust Enforcement
+
+**Parent-child trust inheritance:**
+
+```
+PRINCIPLE: Child workspace trust cannot exceed parent ceiling.
+
+Parent (Manifest Automations)
+├─ Trust Level: 4 (full autonomy)
+├─ Can dispatch to children at lower levels
+│
+├─ Child: project-alpha
+│   └─ Trust Level: 2 (limited autonomy)
+│   └─ Inherits parent guardrails + own tighter constraints
+│
+└─ Child: project-beta
+    └─ Trust Level: 2 (limited autonomy)
+    └─ Inherits parent guardrails + own tighter constraints
+```
+
+**Constraint derivation (same pattern as sub-agent scoping):**
+
+```bash
+# scripts/worker/lib/workspace-constraints.sh
+derive_workspace_constraints() {
+  local parent_constraints="$1"
+  local workspace_id="$2"
+
+  local ws_trust=$(yq ".workspaces.$workspace_id.trust_level" "$REGISTRY_FILE")
+  local parent_trust=$(jq -r '.trust_level' "$parent_constraints")
+
+  # Cannot exceed parent
+  if [ "$ws_trust" -gt "$parent_trust" ]; then
+    echo "[error] Workspace trust ($ws_trust) exceeds parent ($parent_trust)"
+    return 1
+  fi
+
+  # Merge constraints (most restrictive wins)
+  merge_constraints "$parent_constraints" "$ws_trust"
+}
+```
+
+**Cross-workspace operation approval:**
+
+From 07-CONTEXT.md, cross-workspace operations are one of the four approval gates:
+- Trust promotions
+- Critical violations
+- Scope access requests
+- **Cross-workspace operations** (new for v1.1)
+
+```bash
+# Cross-workspace dispatch requires approval at Trust < 3
+request_cross_workspace_approval() {
+  local source_workspace="$1"
+  local target_workspace="$2"
+  local operation="$3"
+
+  local trust_level=$(get_current_trust_level)
+
+  if [ "$trust_level" -lt 3 ]; then
+    create_approval_request \
+      --type "cross_workspace" \
+      --source "$source_workspace" \
+      --target "$target_workspace" \
+      --operation "$operation"
+
+    echo "[approval] Cross-workspace operation requires CEO approval"
+    exit 0
+  fi
+
+  # Trust 3+ auto-approved with audit log
+  log_audit_event "cross_workspace_auto_approved" \
+    --arg source "$source_workspace" \
+    --arg target "$target_workspace" \
+    --arg trust_level "$trust_level"
+}
+```
+
+---
+
+### New Component: Workspace Bootstrap
+
+Script to register a new child workspace.
+
+```bash
+# scripts/workspace/bootstrap.sh
+bootstrap_workspace() {
+  local workspace_name="$1"
+  local workspace_path="$2"
+  local github_repo="$3"
+
+  echo "[bootstrap] Registering workspace: $workspace_name"
+
+  # 1. Validate workspace has required structure
+  validate_workspace_structure "$workspace_path" || exit 1
+
+  # 2. Add to registry
+  yq -i ".workspaces.$workspace_name = {
+    \"path\": \"$workspace_path\",
+    \"github\": \"$github_repo\",
+    \"trust_level\": 2,
+    \"status\": \"active\",
+    \"last_sync\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",
+    \"capabilities\": $(detect_capabilities "$workspace_path")
+  }" "$REGISTRY_FILE"
+
+  # 3. Initialize parent trust constraints in child
+  copy_parent_constraints "$workspace_path"
+
+  # 4. Set up repository_dispatch workflow if not present
+  if [ ! -f "$workspace_path/.github/workflows/worker-dispatch.yml" ]; then
+    setup_dispatch_workflow "$workspace_path"
+  fi
+
+  echo "[bootstrap] Workspace registered: $workspace_name"
+}
+
+validate_workspace_structure() {
+  local path="$1"
+
+  # Required files
+  [ -f "$path/scripts/worker/execute.sh" ] || { echo "[error] Missing execute.sh"; return 1; }
+  [ -d "$path/.claude" ] || { echo "[error] Missing .claude directory"; return 1; }
+
+  # Optional but recommended
+  [ -f "$path/.planning/PROJECT.md" ] || echo "[warning] Missing PROJECT.md"
+
+  return 0
+}
+
+detect_capabilities() {
+  local path="$1"
+  local caps="[\"gsd\""
+
+  [ -f "$path/scripts/worker/spawn-subagent.sh" ] && caps+=", \"worker-parallelization\""
+  [ -f "$path/.claude/skills/worker/lib/hooks.sh" ] && caps+=", \"trust-guardrails\""
+  [ -f "$path/.worker/audit/chain.json" ] && caps+=", \"audit-chain\""
+
+  caps+="]"
+  echo "$caps"
+}
+```
 
 ---
 
 ## Data Flow Patterns
 
-### 1. CEO Dispatches Work (Top-Down)
+### Pattern 1: CEO Dispatches to Child Workspace
 
 ```
 CEO (Anti-Gravity)
     │
-    ├─ "Implement OAuth2 authentication"
+    ├─ "Build auth module in project-alpha"
     │
     ▼
-Orchestrator (Gemini Pro)
+Orchestrator (Parent)
     │
-    ├─ Decomposes to: [Backend API, Frontend integration, Docs update]
-    ├─ Creates GitHub issues: GH-142, GH-143, GH-144
-    ├─ Assigns to workers
-    │
-    ▼
-Worker Agent (Claude via GSD)
-    │
-    ├─ Reads issue GH-142 from GitHub
-    ├─ Executes skill: @/agents/skills/backend-service
-    ├─ Uses MCP for file access, terminal
-    ├─ Creates PR, updates issue
+    ├─ Classify intent: DISPATCH with workspace target
+    ├─ Resolve workspace: project-alpha → ./projects/project-alpha
+    ├─ Decompose task to issues
+    ├─ Request approval for cross-workspace dispatch (if trust < 3)
     │
     ▼
-GitHub (Coordination Layer)
+Cross-Workspace Approval (if required)
     │
-    ├─ PR created, issue status updated
-    │
-    ▼
-Orchestrator (Status Aggregation)
-    │
-    ├─ Detects completion, aggregates results
+    ├─ CEO approves via dashboard
     │
     ▼
-CEO (Mission Control Inbox)
+Dispatch Mechanism
     │
-    └─ Receives briefing: "OAuth2 complete, pending review"
+    ├─ Create issue in owner/project-alpha repo
+    ├─ If local: cd && execute.sh
+    ├─ If remote: repository_dispatch event
+    │
+    ▼
+Child Workspace: project-alpha
+    │
+    ├─ Worker picks up issue
+    ├─ Executes with inherited constraints
+    ├─ Creates PR, updates issue labels
+    │
+    ▼
+Status Aggregator (Parent)
+    │
+    ├─ Polls child repo for label changes
+    ├─ Detects completion
+    │
+    ▼
+CEO Inbox
+    │
+    └─ "Auth module complete in project-alpha, PR #42 ready for review"
+```
+
+### Pattern 2: Portfolio Status Query
+
+```
+CEO (Anti-Gravity)
+    │
+    ├─ "Portfolio status"
+    │
+    ▼
+Orchestrator (Parent)
+    │
+    ├─ Classify intent: STATUS (portfolio scope)
+    ├─ Load workspace registry
+    │
+    ▼
+Status Aggregator
+    │
+    ├─ For each workspace in registry:
+    │   ├─ gh issue list --repo {repo} --label "worker:*"
+    │   └─ Collect counts: executing, awaiting, complete, failed
+    ├─ Aggregate totals
+    ├─ Format portfolio table
+    │
+    ▼
+CEO
+    │
+    └─ Receives unified portfolio view
+```
+
+### Pattern 3: Cross-Workspace Failure Cascade
+
+```
+Child Workspace A: Worker fails
+    │
+    ├─ Updates issue with worker:failed label
+    │
+    ▼
+Status Aggregator (Parent, polling)
+    │
+    ├─ Detects failure in project-alpha #42
+    ├─ Checks for cross-workspace dependencies
+    │   └─ project-beta #15 depends on project-alpha #42
+    │
+    ▼
+Cascade Handler
+    │
+    ├─ Labels project-beta #15 as cascade-blocked
+    ├─ Creates failure report
+    │
+    ▼
+CEO Inbox (Immediate notification)
+    │
+    ├─ "[XX] project-alpha #42 failed"
+    ├─ "Cascade impact: project-beta #15 blocked"
+    └─ "Options: retry, modify, abandon"
 ```
 
 ---
 
-### 2. Worker Reports Results (Bottom-Up)
+## Integration Points with Existing Components
 
-```
-Worker Agent (Claude)
-    │
-    ├─ Completes task
-    ├─ Executes: gh pr create --title "feat: auth" --body "Closes #142"
-    ├─ Executes: gh issue close 142 --reason completed
-    │
-    ▼
-GitHub (State Change)
-    │
-    ├─ PR created, issue closed
-    ├─ Triggers webhook/polling by orchestrator
-    │
-    ▼
-Orchestrator (Gemini Flash)
-    │
-    ├─ Detects state change via gh CLI polling
-    ├─ Updates task ledger
-    ├─ Aggregates into daily briefing
-    │
-    ▼
-CEO Inbox (Anti-Gravity)
-    │
-    └─ Status: "GH-142 complete, awaiting merge"
-```
+### Existing Component Modifications
+
+| Component | Current Location | Modification Needed |
+|-----------|------------------|---------------------|
+| Orchestrator skill | `.gemini/skills/orchestrate.md` | Add workspace targeting in intent classification, cross-workspace dispatch functions |
+| Dispatch script | `scripts/orchestrator/dispatch.sh` | Add `--workspace` flag, workspace resolution |
+| Aggregate script | `scripts/orchestrator/aggregate.sh` | Add `--portfolio` mode, multi-repo queries |
+| Worker execute | `scripts/worker/execute.sh` | Add `PARENT_TRACE_ID` tracking for cross-workspace tracing |
+| Trust enforcement | `.claude/skills/worker/lib/hooks.sh` | Add workspace constraint inheritance |
+| CEO dashboard skill | `.agent/skills/ceo-dashboard/` | Add portfolio view, per-workspace drilldown |
+| Briefing generator | `scripts/worker/generate-briefing.sh` | Add portfolio section to daily briefing |
+
+### New Components to Build
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| Workspace registry | `.planning/workspaces/registry.yaml` | Track registered child workspaces |
+| Workspace bootstrap | `scripts/workspace/bootstrap.sh` | Register new child workspaces |
+| Workspace health check | `scripts/workspace/health.sh` | Validate workspace structure and connectivity |
+| Cross-workspace dispatch | `scripts/orchestrator/dispatch-workspace.sh` | Handle workspace-targeted dispatch |
+| Repository dispatch workflow | `.github/workflows/worker-dispatch.yml` | Template for child repos to receive dispatch events |
+| Portfolio aggregation | Extension to aggregate.sh | Multi-repo status collection |
 
 ---
 
-### 3. Agent-to-Agent Coordination (Horizontal via A2A)
-
-```
-Orchestrator A (Project Alpha Lead)
-    │
-    ├─ Needs design system component from Project Beta
-    ├─ Discovers Agent Card for Project Beta's Design Agent
-    ├─ Authenticates via A2A protocol
-    │
-    ▼
-A2A Communication (HTTPS + JSON-RPC 2.0)
-    │
-    ├─ Task: "Export button component library"
-    ├─ Message: Specification, version requirements
-    │
-    ▼
-Orchestrator B (Project Beta Lead)
-    │
-    ├─ Receives task, validates scope
-    ├─ Delegates to Design Agent worker
-    │
-    ▼
-Worker Agent (Claude)
-    │
-    ├─ Generates artifacts (component files)
-    ├─ Returns via A2A response
-    │
-    ▼
-Orchestrator A
-    │
-    ├─ Receives artifacts
-    ├─ Dispatches integration to own worker
-    │
-    └─ Updates GitHub with cross-project reference
-```
-
----
-
-### 4. Trust Enforcement (Hook-Based)
-
-```
-Worker Agent
-    │
-    ├─ Attempts: rm -rf /important/data
-    │
-    ▼
-Pre-Hook (Command Sanitization)
-    │
-    ├─ Detects destructive operation
-    ├─ Validates against agent scope
-    ├─ REJECTS (scope violation)
-    │
-    ▼
-Trust Ledger
-    │
-    ├─ Logs rejection
-    ├─ Increments violation counter
-    ├─ Triggers escalation if threshold exceeded
-    │
-    ▼
-Orchestrator
-    │
-    ├─ Receives escalation
-    ├─ Notifies CEO via Mission Control
-    │
-    └─ Awaits human decision
-```
-
----
-
-## Orchestration Patterns (Applied to This Architecture)
-
-### Primary Pattern: Hierarchical Task Decomposition
-
-**Use in system:** CEO provides high-level directive → Orchestrator decomposes → Workers execute
-
-**Why this pattern:**
-- Complex, ambiguous problems ("build an AI agency")
-- Multi-level planning required
-- Top-down delegation matches org structure
-
-**Component mapping:**
-- **Root agent:** CEO (human strategic direction)
-- **Parent agents:** Gemini orchestrators (task decomposition)
-- **Leaf agents:** Claude workers (execution)
-
-**Alternative patterns considered:**
-- **Sequential:** Too rigid for dynamic project needs
-- **Swarm:** Too complex, coordination overhead excessive
-- **Coordinator (flat):** Doesn't scale beyond ~7 agents
-
----
-
-### Secondary Pattern: Handoff Orchestration
-
-**Use in system:** Orchestrators dynamically route work based on agent expertise
-
-**Why this pattern:**
-- Expertise requirements unknown upfront (dynamic task routing)
-- Agent specialization varies (backend, frontend, DevOps, etc.)
-
-**Component mapping:**
-- **Routing logic:** Orchestrator evaluates task, checks agent manifests
-- **Handoff trigger:** Skill/tool mismatch detected
-- **Full context transfer:** GitHub issue contains full specification
+## Build Order Recommendation
 
----
+Based on dependencies, recommended implementation order:
 
-### Tertiary Pattern: Parallel Orchestration
+### Phase 1: Foundation (Workspace Registry)
 
-**Use in system:** Sub-agents spawned by workers for concurrent execution
+**Build first - no dependencies on other new components:**
 
-**Why this pattern:**
-- Independent subtasks (frontend + backend development)
-- Time-sensitive scenarios (parallel PR reviews)
+1. Create workspace registry schema and location
+2. Build workspace bootstrap script
+3. Build workspace health check
+4. Test with single child workspace (manual registration)
 
-**Component mapping:**
-- **Parallel executor:** Worker agent spawns sub-agents
-- **Aggregation:** Worker collects sub-agent results
-- **Synchronization:** GitHub state convergence
+**Validation:** Can register a workspace, query its metadata, validate its health.
 
----
+### Phase 2: Local Dispatch (Mode 1)
 
-## Communication Protocols
+**Build second - depends on Phase 1:**
 
-### A2A (Agent-to-Agent)
+1. Modify dispatch.sh to accept `--workspace` flag
+2. Implement workspace path resolution
+3. Implement local dispatch (cd && execute.sh)
+4. Add workspace targeting to orchestrator skill intent classification
 
-**Components:**
-1. **Agent Card (JSON):** Declares capabilities, version, auth requirements
-2. **Task:** Work unit with unique ID, lifecycle states
-3. **Message:** Communication unit (requests/responses)
-4. **Artifact:** Tangible outputs (code, documents, configs)
+**Validation:** CEO can say "Build X in project-alpha" and work executes in correct workspace.
 
-**Workflow:**
-1. **Discovery:** Client agent fetches remote agent card
-2. **Authentication:** OAuth 2.0 / API keys
-3. **Communication:** HTTPS + JSON-RPC 2.0, async/streaming support
+### Phase 3: Status Aggregation
 
-**Use in system:**
-- Cross-project orchestrator collaboration
-- Agent discovery (find specialists)
-- Secure delegation with audit trail
+**Build third - depends on Phase 1, can parallel with Phase 2:**
 
----
+1. Extend aggregate.sh with `--portfolio` mode
+2. Implement multi-repo status queries
+3. Add portfolio view to CEO dashboard skill
+4. Add portfolio section to daily briefing
 
-### MCP (Model Context Protocol)
+**Validation:** "Portfolio status" returns unified view across all registered workspaces.
 
-**Purpose:** Universal adapter for tools, APIs, data sources
+### Phase 4: Trust Inheritance
 
-**Use in system:**
-- File system access (read/write code)
-- Terminal execution (git, npm, docker commands)
-- API integration (external services)
+**Build fourth - depends on Phase 2:**
 
-**Why critical:**
-- Eliminates custom integration code per agent
-- Standardizes capability access across Claude/Gemini
-- Simplifies agent definitions (declare tools, MCP handles implementation)
+1. Implement workspace constraint derivation
+2. Add cross-workspace approval gate
+3. Integrate with existing approval workflow
+4. Add audit logging for cross-workspace operations
 
----
+**Validation:** Cross-workspace dispatch at Trust < 3 requires approval; Trust 3+ auto-approved with audit.
 
-### GitHub gh CLI
+### Phase 5: Remote Dispatch (Mode 2)
 
-**Purpose:** Bridge between agents and coordination layer
+**Build fifth - optional, for production deployments:**
 
-**Use in system:**
-```bash
-# Orchestrator assigns work
-gh issue edit 142 --add-assignee "claude-worker-01" --project-status "In Progress"
+1. Create repository_dispatch workflow template
+2. Implement remote dispatch via GitHub API
+3. Add trace ID propagation for cross-workspace tracing
+4. Implement async completion detection
 
-# Worker completes task
-gh pr create --title "feat: auth module" --body "Closes #142"
-gh issue close 142 --reason completed
-
-# Orchestrator aggregates status
-gh issue list --assignee "@me" --state open --json title,number,status
-```
-
-**Why gh CLI (not REST API directly):**
-- Simpler for agents (natural language → CLI easier than API payloads)
-- Built-in retry/error handling
-- Human-auditable commands (exactly what human would run)
-
----
-
-## Patterns to Follow
-
-### Pattern 1: External State Management
-
-**What:** Never store authoritative state in agent memory/databases. Always use external source of truth (GitHub).
-
-**When:** Any multi-agent system requiring coordination, auditability, recovery
-
-**Why:**
-- **Agents are disposable:** Can restart/replace without losing state
-- **Humans can intervene:** Direct GitHub access for course correction
-- **Audit trail:** Every state change logged in git history
-- **Recovery:** System state reconstructable from GitHub even if all agents fail
-
-**Example:**
-```typescript
-// GOOD: GitHub as source of truth
-async function getTaskStatus(taskId: string) {
-  const issue = await gh.issue.get(taskId);
-  return issue.state; // "open", "in_progress", "completed"
-}
-
-// BAD: Agent memory as source of truth
-const taskStatus = new Map<string, string>();
-function getTaskStatus(taskId: string) {
-  return taskStatus.get(taskId); // Lost on agent restart
-}
-```
-
----
-
-### Pattern 2: Hook-Based Trust Enforcement
-
-**What:** Enforce constraints at execution boundaries (pre/post hooks), not runtime permission checks.
-
-**When:** Need guardrails without complex runtime permission systems
-
-**Why:**
-- **Simpler:** Hooks intercept at command execution, not scattered throughout code
-- **Fail-safe:** Hook failure = operation blocked automatically
-- **Auditable:** Every enforcement decision logged
-- **Declarative:** Define rules in hook configs, not application logic
-
-**Example:**
-```yaml
-# Pre-hook: Command sanitization
-pre_hooks:
-  - name: prevent_destructive_ops
-    trigger: command_contains("rm -rf")
-    action: reject
-    log: "Blocked destructive operation"
-
-# Post-hook: Output validation
-post_hooks:
-  - name: validate_pr_created
-    trigger: command_matches("gh pr create")
-    validate: github_has_new_pr()
-    on_failure: escalate_to_orchestrator
-```
-
----
-
-### Pattern 3: Declarative Agent Manifests
-
-**What:** Define agent identity, capabilities, and constraints in YAML, not code.
-
-**When:** Need agent spawning, discovery, and permission management
-
-**Why:**
-- **CEO invokes intent, agents encode implementation:** Human says "review this PR", manifest defines which agent has review skills
-- **Version control:** Agent definitions tracked in git
-- **Discovery:** Orchestrators query manifests to find specialists
-- **Model selection at design time:** Flash for speed, Pro for complexity, encoded in manifest
-
-**Example:**
-```yaml
-# Backend specialist
-name: backend-api-developer
-model: claude-sonnet-4.5
-tools:
-  - file_system
-  - terminal
-  - gh_cli
-skills:
-  - "@/agents/skills/api-development"
-  - "@/agents/skills/database-migration"
-constraints:
-  scope: "src/backend/**"
-  max_file_size_mb: 10
-triggers:
-  - label: "backend"
-  - skill: "api-development"
-```
-
----
-
-### Pattern 4: Outcome-Based Worktree Cleanup
-
-**What:** Create git worktrees dynamically per task. Cleanup based on outcome (success = remove, failure = preserve).
-
-**When:** Parallel development by multiple agents on same repo
-
-**Why:**
-- **Isolation:** Prevents merge conflicts during concurrent work
-- **Debugging:** Failed attempts preserved for human investigation
-- **Efficiency:** Successful work auto-cleaned, no manual maintenance
-
-**Example:**
-```bash
-# Worker creates worktree for task
-git worktree add ../project-feature-gh-142 feature/auth-module
-
-# On success (PR merged)
-git worktree remove ../project-feature-gh-142
-
-# On failure (tests failed)
-# Worktree preserved, orchestrator escalates to human
-echo "Worktree preserved at ../project-feature-gh-142 for debugging"
-```
-
----
-
-### Pattern 5: Layered Observability
-
-**What:** Each layer emits structured logs, aggregated bottom-up for CEO visibility.
-
-**When:** Need to debug multi-agent coordination without drowning in logs
-
-**Why:**
-- **Layer 1-3:** Detailed execution logs (for debugging specific operations)
-- **Layer 4:** Task-level summaries (worker progress)
-- **Layer 6:** Project-level aggregations (orchestrator briefings)
-- **Layer 7:** Strategic summaries (CEO daily briefing)
-
-**Example:**
-```typescript
-// Layer 4 (Worker): Detailed execution
-logger.debug("Executing skill: backend-service", { issue: "GH-142", step: 3 });
-
-// Layer 6 (Orchestrator): Task summary
-logger.info("Task GH-142 completed", {
-  duration: "45m",
-  worker: "claude-worker-01",
-  outcome: "PR created"
-});
-
-// Layer 7 (CEO Inbox): Daily briefing
-logger.summary("OAuth2 implementation complete", {
-  issues_closed: 3,
-  prs_merged: 2,
-  blockers: 0
-});
-```
+**Validation:** Can dispatch to child workspace in different GitHub org via repository_dispatch.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: The "God Agent"
+### Anti-Pattern 1: Shared Mutable State Between Workspaces
 
-**What:** Single agent tries to handle too many distinct tasks
+**What:** Using shared files or databases for cross-workspace coordination.
+**Why bad:** Race conditions, no audit trail, violates "GitHub as source of truth".
+**Instead:** All cross-workspace state in GitHub (issues, labels, comments). Registry is read-only metadata.
 
-**Why bad:**
-- Context windows explode (too much context per request)
-- Tool confusion (too many tools, agent hallucinates which to use)
-- Hallucination rate increases (diluted attention)
+### Anti-Pattern 2: Deep Nesting of Workspaces
 
-**Consequences:**
-- Unpredictable behavior
-- Difficult to debug (unclear which "mode" agent is in)
-- Can't scale (single bottleneck)
+**What:** Workspaces containing workspaces containing workspaces.
+**Why bad:** Exponential complexity, trust inheritance becomes unclear.
+**Instead:** Flat structure - parent and children only. No grandchildren.
 
-**Instead:** Create specialized agents with narrow, well-defined responsibilities. Use orchestrators for routing.
+### Anti-Pattern 3: Bidirectional Dispatch
 
-**Detection:**
-- Agent manifest has > 10 tools
-- Agent handles > 5 distinct workflow types
-- Error rate increases as task diversity grows
+**What:** Child workspaces dispatching work back to parent or siblings.
+**Why bad:** Circular dependencies, unpredictable execution order.
+**Instead:** Unidirectional dispatch - parent dispatches to children only. Children report status up.
 
----
+### Anti-Pattern 4: Tight Coupling to Workspace Structure
 
-### Anti-Pattern 2: Agents Managing State Directly
+**What:** Hardcoding workspace paths or assuming specific directory layout.
+**Why bad:** Breaks when workspaces move or change structure.
+**Instead:** All workspace references via registry. Path resolution at runtime.
 
-**What:** Storing authoritative state in agent memory, vector databases, or custom state managers
+### Anti-Pattern 5: Synchronous Cross-Workspace Blocking
 
-**Why bad:**
-- State lost on agent restart/failure
-- No human visibility (can't inspect/correct)
-- No audit trail (state changes invisible)
-- Multi-agent race conditions (conflicting updates)
-
-**Consequences:**
-- System unrecoverable after failures
-- Debugging impossible (state opaque)
-- Trust violations undetectable
-
-**Instead:** Use GitHub as single source of truth. Agents read/write via gh CLI.
-
-**Detection:**
-- Agent code contains in-memory maps/caches for task state
-- Database tables for "current work items"
-- No GitHub issue for an "in-progress" task
-
----
-
-### Anti-Pattern 3: Premature Multi-Agent Complexity
-
-**What:** Building 10-agent system before validating single agent can't handle task
-
-**Why bad:**
-- Coordination overhead outweighs benefits (< 7 agents often unnecessary)
-- Debugging nightmares (which agent caused the issue?)
-- Wasted development time (simpler solution exists)
-
-**Consequences:**
-- Higher operational costs (more models, more compute)
-- Increased latency (handoff overhead)
-- Brittle system (more failure points)
-
-**Instead:** Start with single agent. Add agents only when clear specialization benefit or parallelization need exists.
-
-**Detection:**
-- System has > 7 agents without hierarchical structure
-- Agents frequently hand off to each other for same task
-- Removing an agent doesn't degrade capability
-
----
-
-### Anti-Pattern 4: Circular Agent Dependencies
-
-**What:** Agent A delegates to Agent B, which delegates back to Agent A
-
-**Why bad:**
-- Infinite loops (no exit condition)
-- Exponential context growth (each handoff adds context)
-- Token costs explode (repeated re-processing)
-
-**Consequences:**
-- System hangs (timeouts required)
-- Unpredictable behavior (loop exit undefined)
-- Resource exhaustion (memory/token limits hit)
-
-**Instead:** Enforce directed acyclic graph (DAG) for agent delegation. Orchestrators delegate down, workers report up.
-
-**Detection:**
-- Same task ID appears multiple times in agent call stack
-- Context window warnings increase over time
-- Timeout errors on complex tasks
-
----
-
-### Anti-Pattern 5: Synchronous Orchestrator Blocking
-
-**What:** Orchestrator waits synchronously for worker completion before routing next task
-
-**Why bad:**
-- Serializes parallel work (eliminates benefit of multi-agent)
-- Orchestrator becomes bottleneck (idle during worker execution)
-- Inefficient resource use (workers idle waiting for dispatch)
-
-**Consequences:**
-- System throughput limited by orchestrator blocking time
-- Parallel tasks run sequentially (defeats purpose)
-- Poor scalability (adding workers doesn't help)
-
-**Instead:** Use asynchronous task dispatch. Orchestrator delegates via GitHub issue assignment, workers report completion via PR/issue updates. Orchestrator polls/webhooks for state changes.
-
-**Detection:**
-- Orchestrator CPU usage low during worker execution
-- Tasks with no dependencies still run sequentially
-- Adding workers doesn't improve throughput
-
----
-
-### Anti-Pattern 6: Unbounded Context Accumulation
-
-**What:** Passing entire conversation histories between agents without summarization
-
-**Why bad:**
-- Context windows overflow (hit model limits)
-- Agents lose focus (buried in irrelevant history)
-- Token costs explode (paying to re-process old context)
-
-**Consequences:**
-- Quality degrades (agent confused by noise)
-- Latency increases (more tokens to process)
-- Errors increase (truncation cuts important context)
-
-**Instead:** Summarize context at handoff boundaries. GitHub issues contain only relevant specification, not full conversation history.
-
-**Detection:**
-- Context length warnings in logs
-- Agent responses reference old, irrelevant information
-- Token costs increase superlinearly with task count
-
----
-
-### Anti-Pattern 7: Missing Observability
-
-**What:** Deploying multi-agent system without logging, tracing, or monitoring
-
-**Why bad:**
-- Debugging becomes guesswork (can't see what agents did)
-- Cost attribution impossible (don't know which agent costs what)
-- Performance issues undetectable (no metrics)
-
-**Consequences:**
-- Incident response slow (no visibility into failures)
-- Cost overruns unexpected (no early warning)
-- Root cause analysis takes hours (manual log diving)
-
-**Instead:** Implement structured logging at every layer, distributed tracing for multi-agent workflows, metrics on cost/latency/success rate.
-
-**Detection:**
-- Can't answer "which agent failed and why?" in < 5 minutes
-- Monthly cost surprises (no budget tracking)
-- Performance regressions discovered by users, not monitoring
+**What:** Parent orchestrator waiting synchronously for child workspace completion.
+**Why bad:** Serializes parallel work, wastes orchestrator resources.
+**Instead:** Fire-and-forget dispatch with async status polling. Same pattern as v1.0 worker dispatch.
 
 ---
 
 ## Scalability Considerations
 
-### At 1-5 Projects (MVP)
+### At 2-5 Workspaces (MVP)
 
 | Concern | Approach |
 |---------|----------|
-| Orchestrator load | Single Gemini orchestrator handles all projects |
-| Worker count | 3-5 Claude workers (generalists) |
-| GitHub rate limits | Standard gh CLI, no optimization needed |
-| State size | Issues/PRs in single repo per project |
-| Cost | Optimize for learning, not cost efficiency |
-| Monitoring | Manual review of Mission Control briefings |
+| Registry size | Single YAML file, no optimization needed |
+| Status polling | Sequential gh CLI calls per workspace |
+| Dispatch latency | Local mode (cd && execute) is instant |
+| Trust management | Single parent constraint file |
 
-**Build focus:** Prove the loop (CEO → Orchestrator → Worker → GitHub → CEO). Validate workflows, not scale.
-
----
-
-### At 10-50 Projects (Growth)
+### At 10-20 Workspaces (Growth)
 
 | Concern | Approach |
 |---------|----------|
-| Orchestrator load | One orchestrator per project cluster (e.g., frontend, backend, data) |
-| Worker count | 10-20 workers, introduce specialists (API dev, UI dev, DevOps) |
-| GitHub rate limits | Caching layer (redis) for issue/PR metadata, reduce gh CLI calls |
-| State size | Submodules per project, worktrees cleaned aggressively |
-| Cost | Migrate simple tasks to Flash, reserve Pro for complex decomposition |
-| Monitoring | Automated daily briefings with anomaly detection |
+| Registry size | Split to per-workspace metadata files |
+| Status polling | Parallel gh CLI calls (background jobs) |
+| Dispatch latency | Repository dispatch for remote workspaces |
+| Trust management | Workspace groups with shared constraint templates |
 
-**Build focus:** Specialization (agent roles), efficiency (reduce redundant gh calls), automation (briefing generation).
-
----
-
-### At 100+ Projects (Scale)
+### At 50+ Workspaces (Scale)
 
 | Concern | Approach |
 |---------|----------|
-| Orchestrator load | Hierarchical orchestrators (meta-orchestrator routes to project orchestrators) |
-| Worker count | 50+ workers, fully specialized roles, sub-agent spawning for parallelization |
-| GitHub rate limits | GraphQL API for bulk queries, webhooks instead of polling, multi-org structure |
-| State size | Separate GitHub orgs per domain, aggressive worktree/branch cleanup |
-| Cost | Model routing (Flash → Pro → Deep Think escalation), prompt caching, batch operations |
-| Monitoring | Real-time dashboards, SLO tracking, automated escalation rules |
-
-**Build focus:** Meta-orchestration (orchestrators managing orchestrators), cost optimization (minimize expensive model usage), reliability (SLO enforcement, circuit breakers).
+| Registry size | Move to GitHub-based registry (repo with workspace manifests) |
+| Status polling | GitHub GraphQL API for bulk queries, webhooks for push updates |
+| Dispatch latency | Queue-based dispatch with backpressure |
+| Trust management | Hierarchical trust groups, automated trust delegation |
 
 ---
 
-## Build Order & Dependencies
+## Key Architectural Decisions
 
-Based on component boundaries and data flow, recommended build order:
+### Decision 1: Registry Location
 
-### Phase 1: Foundation (Weeks 1-2)
-**Build:** Layer 1 (Agent definitions), Layer 5 (GitHub setup), Layer 3 (MCP integration)
-
-**Why first:**
-- No higher layers work without foundation
-- GitHub must exist before agents can read/write
-- MCP required for any tool access
-
-**Dependencies:** None (greenfield)
-
-**Validation:** Can create GitHub issue manually, read it via gh CLI, MCP can access file system
-
----
-
-### Phase 2: Single Worker (Weeks 3-4)
-**Build:** Layer 4 (One Claude worker), basic GSD command execution
-
-**Why second:**
-- Proves agent can execute and report
-- Establishes worker → GitHub flow
-- No orchestration needed yet (human acts as orchestrator)
-
-**Dependencies:** Phase 1 complete
-
-**Validation:** Human creates GitHub issue, Claude worker picks it up, creates PR, updates issue
-
----
-
-### Phase 3: Trust Guardrails (Week 5)
-**Build:** Layer 2 (Pre/post hooks for command sanitization, output validation)
-
-**Why third:**
-- Before orchestrators exist, establish trust boundaries
-- Easier to test with single worker
-- Prevents runaway agents once orchestration begins
-
-**Dependencies:** Phase 2 complete (need worker to test hooks against)
-
-**Validation:** Worker attempts forbidden operation, hook blocks it, audit log created
-
----
-
-### Phase 4: Single Orchestrator (Weeks 6-7)
-**Build:** Layer 6 (One Gemini orchestrator), dispatch mechanism (claude-code invocation)
-
-**Why fourth:**
-- Now have trusted workers, can delegate to them
-- Proves orchestrator → worker → GitHub loop
-- Establishes A2A protocol basics
-
-**Dependencies:** Phase 3 complete (workers must be trusted before orchestration)
-
-**Validation:** Orchestrator receives task, decomposes to subtasks, assigns to worker via GitHub, worker completes, orchestrator aggregates status
-
----
-
-### Phase 5: CEO Interface (Week 8)
-**Build:** Layer 7 (Mission Control integration, daily briefing generation)
-
-**Why fifth:**
-- All automation complete, now surface to human
-- Orchestrator must exist to generate briefings
-- Completes the full loop
-
-**Dependencies:** Phase 4 complete (orchestrator must aggregate status)
-
-**Validation:** CEO receives daily briefing in Anti-Gravity inbox, issues directive, sees result next day
-
----
-
-### Phase 6: Specialization (Weeks 9-12)
-**Build:** Multiple worker types (backend, frontend, DevOps), agent manifest-based routing
-
-**Why sixth:**
-- Foundation proven, now optimize via specialization
-- Orchestrator logic complex (needs working baseline first)
-
-**Dependencies:** Phase 5 complete (basic loop working)
-
-**Validation:** Task requiring frontend work routes to frontend specialist, not generalist
-
----
-
-### Phase 7: Parallelization (Weeks 13-16)
-**Build:** Sub-agent spawning, parallel orchestration pattern, worktree management
-
-**Why seventh:**
-- Serialization proven, now add concurrency
-- Complex (requires mature orchestrator)
-
-**Dependencies:** Phase 6 complete (need specialists to parallelize)
-
-**Validation:** Single task spawns 3 sub-agents, all work concurrently, results converge in GitHub
-
----
-
-### Phase 8: Scale & Monitoring (Weeks 17+)
-**Build:** Hierarchical orchestrators, observability layers, cost optimization
-
-**Why last:**
-- Only needed at scale
-- Requires all patterns working first
-
-**Dependencies:** Phase 7 complete (full system operational)
-
-**Validation:** 10+ concurrent projects managed without human intervention, < 5% error rate, cost within budget
-
----
-
-## Key Architectural Decisions for Roadmap
-
-### Decision 1: Layered vs Flat Architecture
-**Recommendation:** Layered (7 layers as defined)
+**Recommendation:** `.planning/workspaces/registry.yaml` in parent workspace
 
 **Rationale:**
-- Clear separation of concerns (CEO strategy, orchestrator coordination, worker execution)
-- Easier to test (mock layers independently)
-- Scalable (can replace layer implementation without affecting others)
+- Consistent with existing `.planning/` pattern for project metadata
+- Single source of truth (no database)
+- Version controlled (git tracks changes)
+- Human readable (YAML, not binary)
 
-**Roadmap impact:** Early phases focus on lower layers (foundation first), higher layers later
+### Decision 2: Dispatch Mechanism
 
----
-
-### Decision 2: GitHub as External State vs Internal State Management
-**Recommendation:** GitHub as single source of truth
+**Recommendation:** Local mode first, repository_dispatch for production
 
 **Rationale:**
-- Auditability (git history = audit log)
-- Human accessibility (can intervene directly)
-- Recovery (state persists even if all agents fail)
-- Standard tooling (gh CLI, git, webhooks)
+- Local mode enables rapid development without GitHub Actions setup
+- Repository dispatch is industry standard for cross-repo automation
+- Both modes use same interface (scripts/orchestrator/dispatch-workspace.sh)
 
-**Roadmap impact:** Phase 1 must establish GitHub patterns before agents built
+### Decision 3: Status Aggregation Strategy
 
----
-
-### Decision 3: Hook-Based vs Runtime Permission System
-**Recommendation:** Hook-based guardrails
+**Recommendation:** Polling via gh CLI, not webhooks
 
 **Rationale:**
-- Simpler implementation (intercept at boundaries, not scattered checks)
-- Fail-safe (hook failure = operation blocked)
-- Auditable (every enforcement decision logged)
+- Consistent with v1.0 approach (stateless orchestrator)
+- No webhook infrastructure to maintain
+- Works across GitHub organizations
+- Polling frequency configurable
 
-**Roadmap impact:** Phase 3 builds hooks before orchestration (prevents runaway agents)
+### Decision 4: Trust Inheritance Model
 
----
-
-### Decision 4: Sequential vs Parallel Build Order
-**Recommendation:** Sequential build of layers, then parallelize within layers
+**Recommendation:** Parent ceiling with child-specific constraints
 
 **Rationale:**
-- Foundation must exist first (can't skip layers)
-- Parallelization within phase (e.g., multiple workers built concurrently in Phase 6)
-- De-risks integration (each phase validates previous)
+- Matches v1.0 sub-agent scoping pattern
+- Prevents privilege escalation
+- Allows per-workspace customization within bounds
 
-**Roadmap impact:** Phases 1-5 strictly sequential, Phases 6-8 allow parallel work
+### Decision 5: Cross-Workspace Dependency Tracking
 
----
-
-### Decision 5: Single Orchestrator vs Distributed Orchestrators
-**Recommendation:** Start single, evolve to hierarchical at scale
+**Recommendation:** Explicit in issue bodies, detected by aggregator
 
 **Rationale:**
-- Single orchestrator simpler to debug (Phase 4)
-- Hierarchical needed at 100+ projects (Phase 8)
-- Premature distribution = unnecessary complexity
-
-**Roadmap impact:** Phase 4 builds one orchestrator, Phase 8 adds meta-orchestrator if needed
+- Consistent with v1.0 "Blocked by #N" pattern
+- Extended to "Blocked by owner/repo#N" for cross-workspace
+- Aggregator detects and reports cascade impacts
 
 ---
 
 ## Sources
 
 **Official Documentation (HIGH confidence):**
-- [Google Cloud: Multi-Agent Design Patterns](https://docs.cloud.google.com/architecture/choose-design-pattern-agentic-ai-system) - 8 patterns, component boundaries
-- [Microsoft Azure: AI Agent Orchestration Patterns](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns) - 5 orchestration patterns, data flows
-- [IBM: Agent2Agent (A2A) Protocol](https://www.ibm.com/think/topics/agent2agent-protocol) - Protocol components, communication structure
+- [GitHub Events that trigger workflows](https://docs.github.com/actions/learn-github-actions/events-that-trigger-workflows) - repository_dispatch documentation
+- [Azure AI Agent Orchestration Patterns](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns) - Dispatcher/coordinator pattern
 
-**Industry Research (MEDIUM-HIGH confidence):**
-- [InfoQ: Google's Eight Essential Multi-Agent Design Patterns](https://www.infoq.com/news/2026/01/multi-agent-design-patterns/) - Pattern analysis
-- [AIMultiple: The 7 Layers of Agentic AI Stack in 2026](https://research.aimultiple.com/agentic-ai-stack/) - Layer boundaries, build dependencies
-- [Ruh AI: AI Agent Protocols 2026 Complete Guide](https://www.ruh.ai/blogs/ai-agent-protocols-2026-complete-guide) - MCP, A2A, protocol comparison
-- [OneReach AI: MCP vs A2A Protocols](https://onereach.ai/blog/guide-choosing-mcp-vs-a2a-protocols/) - Protocol use cases
+**Industry Patterns (MEDIUM confidence):**
+- [DEV Community: Multi-Agent Systems Guide 2026](https://dev.to/eira-wexford/how-to-build-multi-agent-systems-complete-2026-guide-1io6) - Dispatch patterns
+- [InfoQ: Google's Multi-Agent Design Patterns](https://www.infoq.com/news/2026/01/multi-agent-design-patterns/) - Coordination architecture
+- [GitKraken Workspaces](https://www.gitkraken.com/features/workspaces) - Multi-repo dashboard patterns
+- [GitHub Actions Cross-Repo Triggers](https://medium.com/hostspaceng/triggering-workflows-in-another-repository-with-github-actions-4f581f8e0ceb) - repository_dispatch implementation
 
-**Architecture Patterns (MEDIUM confidence):**
-- [CrewAI Blog: Agentic Systems Architecture](https://blog.crewai.com/agentic-systems-with-crewai/) - System design patterns
-- [DataCamp: CrewAI vs LangGraph vs AutoGen](https://www.datacamp.com/tutorial/crewai-vs-langgraph-vs-autogen) - Framework comparison
-- [Cloud Geometry: Multi-Agent Systems Architecture](https://www.cloudgeometry.com/blog/from-solo-act-to-orchestra-why-multi-agent-systems-demand-real-architecture) - Anti-patterns
+**Codebase Analysis (HIGH confidence):**
+- `scripts/worker/execute.sh` - Worker invocation pattern
+- `scripts/orchestrator/dispatch.sh` - Single-workspace dispatch implementation
+- `scripts/worker/spawn-subagent.sh` - Constraint inheritance pattern
+- `.gemini/skills/orchestrate.md` - Orchestrator skill structure
+- `.planning/phases/06-worker-parallelization/06-CONTEXT.md` - Sub-agent scoping decisions
 
-**Anti-Patterns & Pitfalls (MEDIUM confidence):**
-- [DEV Community: Multi-Agent Systems Complete 2026 Guide](https://dev.to/eira-wexford/how-to-build-multi-agent-systems-complete-2026-guide-1io6) - Common mistakes
-- [Composio: Why AI Agent Pilots Fail 2026](https://composio.dev/blog/why-ai-agent-pilots-fail-2026-integration-roadmap) - Integration traps
-- [VentureBeat: More Agents Isn't Reliable Path](https://venturebeat.com/orchestration/research-shows-more-agents-isnt-a-reliable-path-to-better-enterprise-ai) - Efficiency research
+---
 
-**Security & Trust (MEDIUM confidence):**
-- [Medium: AI Agent Identity & Zero-Trust 2026](https://medium.com/@raktims2210/ai-agent-identity-zero-trust-the-2026-playbook-for-securing-autonomous-systems-in-banks-e545d077fdff) - Zero-trust architecture
-- [DEV: Zero Trust Agentic AI Architecture](https://dev.to/dev_gupta_6707a7dccdfd729/zero-trust-agentic-ai-designing-autonomy-behind-guardrails-c2l) - Guardrail design
-- [Microsoft Security: New Era of Agents Posture](https://www.microsoft.com/en-us/security/blog/2026/01/21/new-era-of-agents-new-era-of-posture/) - Security considerations
+## Quality Gate Checklist
+
+- [x] Integration points clearly identified
+- [x] New vs modified components explicit
+- [x] Cross-workspace data flow documented
+- [x] Build order considers existing dependencies
+- [x] Anti-patterns documented with alternatives
+- [x] Scalability considerations addressed
+- [x] Key architectural decisions with rationale
