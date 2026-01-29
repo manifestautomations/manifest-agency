@@ -10,19 +10,19 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 6 of 7 (Worker Parallelization) - IN PROGRESS
-Plan: 3 of 5 complete (60%)
+Plan: 4 of 5 complete (80%)
 Status: In progress
-Last activity: 2026-01-28 — Completed 06-03-PLAN.md (Timeout Manager)
+Last activity: 2026-01-29 — Completed 06-02-PLAN.md (Sub-Agent Scope Library)
 
-Progress: [██████░░░░] 60% (Phase 6)
-Overall:  [████████░░] 74% (23 of 31 plans)
+Progress: [████████░░] 80% (Phase 6)
+Overall:  [████████░░] 77% (24 of 31 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 24
 - Average duration: 4.4 min
-- Total execution time: 1.6 hours
+- Total execution time: 1.7 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Overall:  [████████░░] 74% (23 of 31 plans)
 | 03-single-worker | 4 | 24min | 6min |
 | 04-trust-guardrails | 5 | 26min | 5.2min |
 | 05-orchestration | 5 | 20min | 4min |
-| 06-worker-parallelization | 3 | 9min | 3min |
+| 06-worker-parallelization | 4 | 14min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 05-03 (4min), 05-04 (3min), 05-05 (4min), 06-01 (3min), 06-03 (3min)
-- Trend: Maintaining efficient 3-4min execution per plan
+- Last 5 plans: 05-04 (3min), 05-05 (4min), 06-01 (3min), 06-02 (5min), 06-03 (3min)
+- Trend: Maintaining efficient 3-5min execution per plan
 
 *Updated after each plan completion*
 
@@ -201,6 +201,13 @@ Recent decisions affecting current work:
 - Parallelization threshold: 3+ independent tasks OR 2 tasks with total duration > 5 minutes
 - Graph extraction pattern: sed to find section, extract YAML fences, validate with yq
 
+**From 06-02 (Sub-Agent Scope Library):**
+- Agent ID format includes wave number and task slug for readability
+- Max nesting depth of 2 enforced (root → sub-agent → sub-sub-agent)
+- Glob pattern matching supports wildcards in parent scope
+- Scope escalation validation occurs before sub-agent spawn
+- Agent registry uses yq for structured YAML updates
+
 **From 06-03 (Timeout Manager):**
 - timeout -k for two-stage termination (SIGTERM at 80%, SIGKILL at 100%)
 - Extension bounds: max 120s per extension, max 2 per agent
@@ -217,6 +224,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T03:03:02Z
-Stopped at: Completed 06-01-PLAN.md (Graph Parser Library)
+Last session: 2026-01-29T03:04:38Z
+Stopped at: Completed 06-02-PLAN.md (Sub-Agent Scope Library)
 Resume file: None
