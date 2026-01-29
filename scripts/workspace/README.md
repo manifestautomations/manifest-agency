@@ -112,9 +112,56 @@ git add .gitmodules projects/project-name
 git commit -m "feat: add project-name workspace"
 ```
 
+### workspace-validate.sh
+
+Validate that a workspace has the required structure for dispatch operations.
+
+**Required (causes INVALID):**
+- Valid git repository
+- `.planning/trust-ledger.md` exists
+
+**Optional (warnings only):**
+- `.claude/` directory
+
+**Usage:**
+```bash
+# Via sourcing (recommended for scripts)
+source scripts/workspace/workspace-validate.sh
+validate_workspace_structure "/path/to/workspace"
+
+# Quick validation
+bash -c 'source scripts/workspace/workspace-validate.sh; validate_workspace_structure "/path/to/workspace"'
+```
+
+**Example output (valid workspace):**
+```
+Validating: project-name
+Path: /home/user/projects/project-name
+
+Status: VALID
+```
+
+**Example output (invalid workspace):**
+```
+Validating: broken-project
+Path: /home/user/projects/broken-project
+
+Status: INVALID
+
+Required items missing:
+  [ERROR] Missing .planning/trust-ledger.md
+
+Warnings:
+  [WARN] Missing .claude/ directory (optional)
+```
+
+**Exit codes:**
+- `0`: All required structure present (may have warnings)
+- `1`: Required structure missing or path doesn't exist
+
 ## Sourcing Functions
 
-Both scripts export functions that can be sourced by other scripts:
+All scripts export functions that can be sourced by other scripts:
 
 ```bash
 # Source workspace-list.sh
@@ -127,4 +174,14 @@ if path=$(resolve_workspace "project-a"); then
     cd "$path"
     # ... work in workspace
 fi
+
+# Source workspace-validate.sh
+source scripts/workspace/workspace-validate.sh
+if validate_workspace_structure "$path"; then
+    echo "Workspace is valid"
+else
+    echo "Workspace has issues"
+fi
 ```
+
+**Note:** On some platforms (Windows/Git Bash), direct invocation via `bash script.sh args` may not work correctly. Use the sourcing pattern shown above for reliable cross-platform behavior.
