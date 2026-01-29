@@ -77,7 +77,10 @@ skipped: 0
   reason: "User reported: Briefing generates but script throws error: line 499: local: can only be used in a function"
   severity: major
   test: 7
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "Lines 499 and 501 use 'local' keyword outside of a function in generate-briefing.sh"
+  artifacts:
+    - path: ".claude/skills/ceo-dashboard/scripts/generate-briefing.sh"
+      issue: "local keyword used in main script body (lines 499, 501)"
+  missing:
+    - "Remove 'local' keywords from lines 499 and 501"
   debug_session: ""

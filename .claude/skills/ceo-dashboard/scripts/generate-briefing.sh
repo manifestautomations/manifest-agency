@@ -496,9 +496,7 @@ if [ -f "$INBOX_INTEGRATION_SCRIPT" ]; then
   source "$INBOX_INTEGRATION_SCRIPT"
 
   # Check for duplicate delivery (prevents double-delivery on manual runs)
-  local briefing_id
   briefing_id="briefing-$(date +%Y-%m-%d)"
-  local is_duplicate
   is_duplicate=$(check_duplicate_delivery "$briefing_id")
 
   if [ "$is_duplicate" = "false" ]; then
