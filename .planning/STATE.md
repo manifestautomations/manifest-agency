@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 12 (Workspace Foundation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-29 — Completed 08-01-PLAN.md (Workspace Discovery)
+Last activity: 2026-01-29 — Completed 08-02-PLAN.md (Workspace Health Checking)
 
-Progress: [###########.........] 52% (37 of 49 plans complete)
+Progress: [###########.........] 54% (38 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 1
-- Tasks completed: 2
-- Lines shipped: ~365
+- Plans completed: 2
+- Tasks completed: 4
+- Lines shipped: ~710
 
 ## Accumulated Context
 
@@ -55,6 +55,11 @@ Summary of major decisions from v1.0:
 - Case-insensitive alias matching using ${var,,} expansion
 - Resolution order: exact dir > submodule suffix > alias
 
+**v1.1 decisions (08-02):**
+- Three-tier status (GREEN/YELLOW/RED) for health checks
+- Git plumbing commands for health checks (stable API)
+- Basic trust ledger validation (headers only, not full parsing)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -70,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 08-01-PLAN.md
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None (run `/gsd:execute-phase 8` to continue)
