@@ -46,6 +46,11 @@ Total: 2 workspace(s)
 
 Resolve workspace names and aliases to filesystem paths.
 
+**Resolution Order:**
+1. Exact directory match at `projects/<name>/`
+2. Submodule path suffix match from `.gitmodules` (case-insensitive)
+3. Alias lookup from `.worker/config.json` (case-insensitive)
+
 **Usage:**
 ```bash
 # Resolve by exact name
