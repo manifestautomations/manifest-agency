@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 12 (Workspace Foundation)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-29 — Completed 08-02-PLAN.md (Workspace Health Checking)
+Plan: 3 of 3 in current phase (COMPLETE)
+Status: Phase complete
+Last activity: 2026-01-29 — Completed 08-03-PLAN.md (Workspace Bootstrap)
 
-Progress: [###########.........] 54% (38 of 49 plans complete)
+Progress: [###########.........] 56% (39 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 2
-- Tasks completed: 4
-- Lines shipped: ~710
+- Plans completed: 3
+- Tasks completed: 6
+- Lines shipped: ~1,300
 
 ## Accumulated Context
 
@@ -60,6 +60,12 @@ Summary of major decisions from v1.0:
 - Git plumbing commands for health checks (stable API)
 - Basic trust ledger validation (headers only, not full parsing)
 
+**v1.1 decisions (08-03):**
+- Trust ceiling inheritance from .worker/config.json guardrails.default_trust_level
+- Template placeholder syntax: {{PLACEHOLDER}} for sed compatibility
+- Function export pattern for bash scripts (source then call)
+- Scaffold mode for adding structure to existing directories
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -75,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 08-02-PLAN.md
-Resume file: None (run `/gsd:execute-phase 8` to continue)
+Stopped at: Completed 08-03-PLAN.md (Phase 8 complete)
+Resume file: None (run `/gsd:execute-phase 9` to continue)
