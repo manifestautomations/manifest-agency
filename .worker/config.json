@@ -21,5 +21,24 @@
     "enabled": false,
     "delegates": [],
     "allowed_types": ["scope_access"]
+  },
+  "ceo_interface": {
+    "notification_tiers": {
+      "critical_violation": "immediate",
+      "system_down": "immediate",
+      "blocked_agent": "delayed",
+      "stale_approval": "delayed",
+      "briefing": "silent",
+      "completion": "silent",
+      "trust_change": "silent"
+    },
+    "ceo_mode": "normal",
+    "delayed_threshold_minutes": 120,
+    "inbox": {
+      "group_by_status": true,
+      "status_groups": ["needs_attention", "in_progress", "completed", "idle"],
+      "urgency_sort": true,
+      "expand_needs_attention": true
+    }
   }
 }
