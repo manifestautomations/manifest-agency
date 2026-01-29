@@ -29,11 +29,15 @@ source "$LIB_DIR/parser.sh"
 source "$LIB_DIR/audit.sh"
 source "$LIB_DIR/validator.sh"
 source "$LIB_DIR/hooks.sh"
+source "$LIB_DIR/graph-parser.sh"
+source "$SCRIPT_DIR/spawn-subagent.sh"
+source "$SCRIPT_DIR/aggregate-wave.sh"
 
 # --- Parse arguments ---
 ISSUE_NUMBER=""
 FORCE_LOCK=false
 STATUS_ONLY=false
+FORCE_SERIAL=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -49,8 +53,12 @@ while [[ $# -gt 0 ]]; do
       STATUS_ONLY=true
       shift
       ;;
+    --serial)
+      FORCE_SERIAL=true
+      shift
+      ;;
     --help|-h)
-      echo "Usage: $0 --issue N [--force] [--status]"
+      echo "Usage: $0 --issue N [--force] [--status] [--serial]"
       echo ""
       echo "Execute work from a GitHub issue in an isolated worktree."
       echo ""
@@ -58,6 +66,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --issue N   Issue number to execute (required)"
       echo "  --force     Override stale lock (use after crash)"
       echo "  --status    Show execution status from logs"
+      echo "  --serial    Force serial execution (bypass parallelization)"
       echo "  --help      Show this help message"
       echo ""
       echo "Workflow:"
@@ -297,6 +306,166 @@ base_sha: $BASE_SHA
   exit 0
 fi
 
+# --- Sub-agent Execution Function ---
+
+# Execute with sub-agents in parallel waves
+# Args: plan_file, worktree_path
+# Returns: 0 on success, 1 on failure
+execute_with_subagents() {
+  local plan_file="$1"
+  local worktree_path="$2"
+
+  echo "[subagent] Starting parallel execution with sub-agents" >&2
+
+  # Extract execution graph
+  local yaml_block
+  if ! yaml_block=$(extract_execution_graph "$plan_file"); then
+    echo "[subagent] Failed to extract execution graph" >&2
+    return 1
+  fi
+
+  # Validate DAG (no cycles)
+  if ! validate_dag "$yaml_block"; then
+    echo "[subagent] Invalid execution graph - contains cycles" >&2
+    return 1
+  fi
+
+  echo "[subagent] ✓ Execution graph validated" >&2
+
+  # Track completed tasks
+  declare -a completed_tasks=()
+  local wave_num=1
+
+  # Process waves until all tasks complete
+  while true; do
+    # Get ready tasks (no dependencies or all dependencies met)
+    local ready_tasks
+    ready_tasks=$(get_ready_tasks "$yaml_block" 2>/dev/null || echo "")
+
+    # Filter out already completed tasks
+    local pending_ready=""
+    while IFS= read -r task_id; do
+      if [ -n "$task_id" ]; then
+        local already_done=false
+        for completed_task in "${completed_tasks[@]}"; do
+          if [ "$task_id" = "$completed_task" ]; then
+            already_done=true
+            break
+          fi
+        done
+
+        if [ "$already_done" = false ]; then
+          pending_ready+="$task_id"$'\n'
+        fi
+      fi
+    done <<< "$ready_tasks"
+
+    # Remove trailing newline
+    pending_ready=$(echo "$pending_ready" | sed '/^$/d')
+
+    if [ -z "$pending_ready" ]; then
+      echo "[subagent] No more ready tasks - execution complete" >&2
+      break
+    fi
+
+    local task_count
+    task_count=$(echo "$pending_ready" | wc -l | tr -d ' ')
+    echo "[subagent] Wave $wave_num: $task_count ready tasks" >&2
+
+    # Build wave tasks JSON
+    local wave_tasks_json="["
+    local first=true
+
+    while IFS= read -r task_id; do
+      if [ -z "$task_id" ]; then
+        continue
+      fi
+
+      # Extract task properties
+      local task_name write_scope command
+      task_name=$(get_task_property "$yaml_block" "$task_id" "name" 2>/dev/null || echo "$task_id")
+      write_scope=$(get_task_property "$yaml_block" "$task_id" "write_scope" 2>/dev/null || echo "[]")
+      command=$(get_task_property "$yaml_block" "$task_id" "command" 2>/dev/null || echo "echo 'No command defined'")
+
+      # Build task JSON
+      if [ "$first" = false ]; then
+        wave_tasks_json+=","
+      fi
+      first=false
+
+      wave_tasks_json+=$(jq -n \
+        --arg id "$task_id" \
+        --arg name "$task_name" \
+        --arg cmd "$command" \
+        --argjson scope "$write_scope" \
+        --arg wave "$wave_num" \
+        '{
+          id: $id,
+          name: $name,
+          command: $cmd,
+          write_scope: $scope,
+          wave: ($wave | tonumber)
+        }')
+    done <<< "$pending_ready"
+
+    wave_tasks_json+="]"
+
+    # Log wave start
+    log_event "subagent_execution_start" \
+      --arg wave "$wave_num" \
+      --arg task_count "$task_count"
+
+    # Spawn wave
+    local wave_id="wave-$wave_num"
+    local parent_id="${WORKER_ID:-claude-worker}"
+
+    if spawn_wave "$wave_tasks_json" "$parent_id"; then
+      # Aggregate results
+      if aggregate_wave_results "$wave_id"; then
+        # Create wave commit
+        local completed_agents
+        completed_agents=$(jq -r '.agents[]? | select(.status == "complete") | .id' \
+          "$WORKER_DIR/waves/$wave_id/agents.json" 2>/dev/null || echo "")
+
+        create_wave_commit "$wave_num" "$completed_agents"
+
+        # Mark tasks as completed
+        while IFS= read -r task_id; do
+          if [ -n "$task_id" ]; then
+            completed_tasks+=("$task_id")
+          fi
+        done <<< "$pending_ready"
+
+        log_event "wave_complete" \
+          --arg wave "$wave_num" \
+          --arg completed "$task_count"
+      else
+        echo "[subagent] Wave $wave_num aggregation failed" >&2
+
+        # Handle failure with salvage
+        if handle_wave_failure "$wave_id" "unknown"; then
+          echo "[subagent] Partial salvage succeeded - continuing" >&2
+        else
+          echo "[subagent] Wave failed - aborting" >&2
+          return 1
+        fi
+      fi
+    else
+      echo "[subagent] Wave $wave_num failed to spawn" >&2
+      return 1
+    fi
+
+    wave_num=$((wave_num + 1))
+  done
+
+  log_event "subagent_execution_complete" \
+    --arg total_waves "$wave_num" \
+    --arg total_tasks "${#completed_tasks[@]}"
+
+  echo "[subagent] ✓ All waves complete" >&2
+  return 0
+}
+
 # --- Execution phase (reached after approval) ---
 WORKER_STATE="executing"
 START_TIME=$(date +%s)
@@ -349,9 +518,38 @@ echo "[worker] Working in: $(pwd)"
 
 # ===== INVOKE CLAUDE FOR IMPLEMENTATION =====
 echo ""
-echo "[worker] Invoking Claude for implementation..."
+echo "[worker] Determining execution mode..."
 
-CLAUDE_PROMPT="You are implementing GitHub issue #${ISSUE_NUMBER}.
+# Check for execution graph in issue body or PLAN.md
+PLAN_FILE=".worker/plans/issue-${ISSUE_NUMBER}-PLAN.md"
+EXECUTION_MODE="serial"
+
+if [ -f "$PLAN_FILE" ]; then
+  if extract_execution_graph "$PLAN_FILE" > /dev/null 2>&1; then
+    EXECUTION_MODE="parallel"
+    log_event "execution_mode" "parallel" "Execution graph detected"
+    echo "[worker] Execution graph detected - parallel mode available"
+  else
+    log_event "execution_mode" "serial" "No execution graph, using serial"
+    echo "[worker] No execution graph - using serial mode"
+  fi
+else
+  log_event "execution_mode" "serial" "No PLAN.md file"
+  echo "[worker] No PLAN.md file - using serial mode"
+fi
+
+# Override to serial if --serial flag set
+if [ "$FORCE_SERIAL" = true ]; then
+  EXECUTION_MODE="serial"
+  echo "[worker] --serial flag set - forcing serial execution"
+fi
+
+# Execute based on mode
+if [ "$EXECUTION_MODE" = "serial" ]; then
+  echo ""
+  echo "[worker] Invoking Claude for implementation (serial mode)..."
+
+  CLAUDE_PROMPT="You are implementing GitHub issue #${ISSUE_NUMBER}.
 
 **Title:** ${ISSUE_TITLE}
 
@@ -372,20 +570,32 @@ Instructions:
 
 When done, confirm what changes you made."
 
-# Call Claude to do the actual implementation work
-# Using print mode to pass the prompt
-if command -v claude &> /dev/null; then
-  claude -p "$CLAUDE_PROMPT" --allowedTools "Bash,Read,Write,Edit,Glob,Grep"
+  # Call Claude to do the actual implementation work
+  # Using print mode to pass the prompt
+  if command -v claude &> /dev/null; then
+    claude -p "$CLAUDE_PROMPT" --allowedTools "Bash,Read,Write,Edit,Glob,Grep"
+  else
+    echo "[error] Claude CLI not found - cannot execute AI work"
+    echo "[worker] Manual implementation required in: $WORKTREE_PATH"
+    echo ""
+    echo "After implementing changes manually:"
+    echo "  1. Stage changes: git add <files>"
+    echo "  2. Re-run this script to complete"
+    release_lock
+    log_session_end "manual_required" "0"
+    exit 0
+  fi
 else
-  echo "[error] Claude CLI not found - cannot execute AI work"
-  echo "[worker] Manual implementation required in: $WORKTREE_PATH"
+  # Parallel execution with sub-agents
   echo ""
-  echo "After implementing changes manually:"
-  echo "  1. Stage changes: git add <files>"
-  echo "  2. Re-run this script to complete"
-  release_lock
-  log_session_end "manual_required" "0"
-  exit 0
+  echo "[worker] Executing with sub-agents (parallel mode)..."
+
+  if ! execute_with_subagents "$PLAN_FILE" "$WORKTREE_PATH"; then
+    echo "[error] Sub-agent execution failed"
+    release_lock
+    log_session_end "subagent_failed" "1"
+    exit 1
+  fi
 fi
 
 # ==================================
