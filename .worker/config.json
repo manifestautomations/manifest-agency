@@ -59,5 +59,9 @@
       "urgency_sort": true,
       "expand_needs_attention": true
     }
+  },
+  "workspaces": {
+    "aliases": [],
+    "projects_dir": "projects"
   }
 }
