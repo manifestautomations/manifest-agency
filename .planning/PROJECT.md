@@ -14,6 +14,18 @@ Wake up, brew coffee, check the inbox. The inbox is Mission Control in Anti-Grav
 
 Not writing code line by line. Not context-switching between terminals. Walking the floor, checking in on teams, making decisions, pointing in the right direction. Leverage AI the way a CEO leverages an organization.
 
+## Current State
+
+**v1.0 MVP shipped** (2026-01-29)
+
+- 7 phases, 36 plans executed
+- ~41,725 lines of code (shell, markdown, JSON, YAML)
+- Complete CEO → Orchestrator → Worker → GitHub → Inbox loop functional
+- Trust guardrails with audit chain operational
+- Sub-agent parallelization available
+
+**Tech stack:** Bash (worker scripts), Gemini (orchestration), Claude (execution), GitHub (coordination), GSD (framework)
+
 ## Architecture
 
 ```
@@ -86,11 +98,11 @@ gh pr create --title "feat: auth module" --body "Closes #142"
 gh issue close 142 --reason completed
 ```
 
-### Trust System (Experimental)
+### Trust System
 
-Hook-enforced guardrails, not runtime permissions:
+Hook-enforced guardrails with hash-chained audit trail:
 
-**Pre-hooks:** Command sanitization, scope validation, resource limits
+**Pre-hooks:** Command sanitization, scope validation, resource limits, 11 safety floor patterns
 **Post-hooks:** Output validation, audit logging, escalation triggers
 
 Trust flows down hierarchy with decreasing scope. Orchestrators can spawn; workers execute; sub-agents stay in lane.
@@ -105,9 +117,11 @@ Trust flows down hierarchy with decreasing scope. Orchestrators can spawn; worke
 ### CEO Inbox
 
 Comprehensive daily briefing via Anti-Gravity Mission Control:
-- Task completion summary (finished, in progress, blocked)
-- Decisions needed (items requiring human judgment)
-- Anomalies/escalations (things that went wrong)
+- Blockers and escalations (priority)
+- Overnight activity summary
+- System health metrics
+- Progress tracking
+- Tomorrow's outlook
 
 ## Constraints
 
@@ -127,35 +141,42 @@ Comprehensive daily briefing via Anti-Gravity Mission Control:
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ GSD operational for Claude workers — v1.0
+- ✓ GitHub configured as coordination layer (issues, projects, PRs) — v1.0
+- ✓ One Gemini orchestrator that can dispatch to GSD and report back — v1.0
+- ✓ Basic agent manifest structure (YAML definitions) — v1.0
+- ✓ Pre/post hooks for trust guardrails — v1.0
+- ✓ Dynamic worktree management — v1.0
+- ✓ CEO inbox reporting (daily briefing format) — v1.0
+- ✓ Worker sub-agent parallelization — v1.0
+- ✓ Approval workflow for high-stakes actions — v1.0
 
 ### Active
 
-- [ ] GSD operational for Claude workers
-- [ ] GitHub configured as coordination layer (issues, projects, PRs)
-- [ ] One Gemini orchestrator that can dispatch to GSD and report back
-- [ ] Basic agent manifest structure (YAML definitions)
-- [ ] Pre/post hooks for trust guardrails
 - [ ] Multiple agent personas (specialists vs generalists)
 - [ ] Workflow templates for repeatable patterns
-- [ ] Dynamic worktree management
-- [ ] CEO inbox reporting (daily briefing format)
 
 ### Out of Scope
 
 - Custom dashboard (using Anti-Gravity Mission Control instead)
 - Proprietary state management (GitHub is the source of truth)
 - Runtime permission systems (hooks enforce trust, not runtime checks)
+- Progressive trust levels 0-4 with earned autonomy (deferred to v2)
+- Distributed tracing and cost tracking (deferred to v2)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| GitHub as coordination layer | Auditable, human-readable, no proprietary state | Pending |
-| Hook-based trust | Enforcement at execution boundaries, not runtime | Experimental |
-| Declarative agent definitions | CEO invokes intent, agents encode implementation | Pending |
-| Dynamic worktrees | Isolation without merge conflicts, outcome-based cleanup | Pending |
-| Agents as disposable resources | Scale to work, not the other way around | Pending |
+| GitHub as coordination layer | Auditable, human-readable, no proprietary state | ✓ Good — 17 scripts, full lifecycle |
+| Hook-based trust | Enforcement at execution boundaries, not runtime | ✓ Good — audit chain functional |
+| Declarative agent definitions | CEO invokes intent, agents encode implementation | ✓ Good — YAML schema validated |
+| Dynamic worktrees | Isolation without merge conflicts, outcome-based cleanup | ✓ Good — scripts operational |
+| Agents as disposable resources | Scale to work, not the other way around | — Pending real-world validation |
+| Label-based state machine | Survives crashes, human-visible in GitHub UI | ✓ Good — 6 worker states |
+| Exit-and-resume for approvals | No polling, clean shell exits | ✓ Good — reaction-based continuation |
+| Hash-chained audit trail | Tamper detection for compliance | ✓ Good — SHA-256 chaining |
+| Tiered notification delivery | Immediate/delayed/silent based on urgency | ✓ Good — inbox integration |
 
 ---
-*Last updated: 2026-01-26 after initialization*
+*Last updated: 2026-01-29 after v1.0 milestone*
