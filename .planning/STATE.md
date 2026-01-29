@@ -12,17 +12,17 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 Phase: 6 of 7 (Worker Parallelization) - IN PROGRESS
 Plan: 4 of 5 complete (80%)
 Status: In progress
-Last activity: 2026-01-29 — Completed 06-02-PLAN.md (Sub-Agent Scope Library)
+Last activity: 2026-01-29 — Completed 06-04-PLAN.md (Scope Validator and Spawner)
 
 Progress: [████████░░] 80% (Phase 6)
-Overall:  [████████░░] 77% (24 of 31 plans)
+Overall:  [████████░░] 80% (25 of 31 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
+- Total plans completed: 25
 - Average duration: 4.4 min
-- Total execution time: 1.7 hours
+- Total execution time: 1.8 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Overall:  [████████░░] 77% (24 of 31 plans)
 | 03-single-worker | 4 | 24min | 6min |
 | 04-trust-guardrails | 5 | 26min | 5.2min |
 | 05-orchestration | 5 | 20min | 4min |
-| 06-worker-parallelization | 4 | 14min | 3.5min |
+| 06-worker-parallelization | 4 | 20min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 05-04 (3min), 05-05 (4min), 06-01 (3min), 06-02 (5min), 06-03 (3min)
-- Trend: Maintaining efficient 3-5min execution per plan
+- Last 5 plans: 05-05 (4min), 06-01 (3min), 06-02 (5min), 06-03 (3min), 06-04 (6min)
+- Trend: Consistent 3-6min execution per plan
 
 *Updated after each plan completion*
 
@@ -214,6 +214,13 @@ Recent decisions affecting current work:
 - Trust level 3+ gets auto-approval for extensions
 - Per-agent timeout state tracked in .worker/agents/{id}/timeout.json
 
+**From 06-04 (Scope Validator and Spawner):**
+- Pre-flight validation BEFORE spawning any agents (not during execution)
+- Associative arrays for PID tracking instead of files
+- Let-finish pattern on wave failure to salvage partial work
+- Immediate PID capture after & prevents race conditions
+- validate_wave_scopes called before any spawn_subagent calls
+
 ### Pending Todos
 
 None yet.
@@ -224,6 +231,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T03:04:38Z
-Stopped at: Completed 06-02-PLAN.md (Sub-Agent Scope Library)
+Last session: 2026-01-29T03:14:44Z
+Stopped at: Completed 06-04-PLAN.md (Scope Validator and Spawner)
 Resume file: None
