@@ -194,6 +194,13 @@ Recent decisions affecting current work:
 - Dispatch state stored in .worker/dispatch/ (ephemeral, gitignored)
 - README documents all scripts with usage examples and troubleshooting
 
+**From 06-01 (Graph Parser Library):**
+- Use yq (mikefarah v4.44+) for YAML parsing - no regex-based parsing due to YAML complexity
+- Return exit code 1 when no graph found - enables serialization fallback
+- tsort format is 'dependency dependent' where dependency must complete before dependent
+- Parallelization threshold: 3+ independent tasks OR 2 tasks with total duration > 5 minutes
+- Graph extraction pattern: sed to find section, extract YAML fences, validate with yq
+
 **From 06-03 (Timeout Manager):**
 - timeout -k for two-stage termination (SIGTERM at 80%, SIGKILL at 100%)
 - Extension bounds: max 120s per extension, max 2 per agent
@@ -210,6 +217,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T03:02:45Z
-Stopped at: Completed 06-03-PLAN.md (Timeout Manager)
+Last session: 2026-01-29T03:03:02Z
+Stopped at: Completed 06-01-PLAN.md (Graph Parser Library)
 Resume file: None
