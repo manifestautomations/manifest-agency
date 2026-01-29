@@ -118,15 +118,16 @@ Plans:
   2. Worker spawns sub-agents with scoped constraints
   3. Sub-agents execute in parallel and report completion
   4. Worker aggregates sub-agent results into cohesive deliverable
-**Plans**: 6 plans in 4 waves
+**Plans**: 7 plans in 5 waves
 
 Plans:
-- [ ] 06-01-PLAN.md - Graph parser library for YAML extraction and DAG validation
-- [ ] 06-02-PLAN.md - Sub-agent scope library for identity and constraints
-- [ ] 06-03-PLAN.md - Timeout manager library for soft-then-hard timeout
-- [ ] 06-04-PLAN.md - Scope validator and sub-agent spawner
-- [ ] 06-05-PLAN.md - Wave aggregation and worker integration
-- [ ] 06-06-PLAN.md - Documentation and verification checkpoint
+- [x] 06-01-PLAN.md - Graph parser library for YAML extraction and DAG validation
+- [x] 06-02-PLAN.md - Sub-agent scope library for identity and constraints
+- [x] 06-03-PLAN.md - Timeout manager library for soft-then-hard timeout
+- [x] 06-04-PLAN.md - Scope validator and sub-agent spawner
+- [x] 06-05-PLAN.md - Wave aggregation and worker integration
+- [x] 06-06-PLAN.md - Documentation and verification checkpoint
+- [ ] 06-07-PLAN.md - Gap closure: fix LIB_DIR path and remove set -euo pipefail from libraries
 
 ### Phase 7: CEO Interface
 **Goal**: Complete CEO loop with Mission Control inbox integration and automated daily briefings
@@ -145,7 +146,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -154,5 +155,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Single Worker | 4/4 | Complete | 2026-01-27 |
 | 4. Trust Guardrails | 5/5 | Complete | 2026-01-28 |
 | 5. Orchestration | 5/5 | Complete | 2026-01-28 |
-| 6. Worker Parallelization | 0/6 | Not started | - |
+| 6. Worker Parallelization | 6/7 | Gap closure | - |
 | 7. CEO Interface | 0/TBD | Not started | - |
