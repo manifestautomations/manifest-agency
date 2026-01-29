@@ -23,6 +23,25 @@
     "allowed_types": ["scope_access"]
   },
   "ceo_interface": {
+    "dashboard": {
+      "cache_ttl_seconds": 300,
+      "live_metrics": ["agents.running", "agents.blocked", "approvals.pending"]
+    },
+    "approvals": {
+      "timeout_hours": 24,
+      "stale_warning_hours": 2,
+      "critical_violation_timeout": null
+    },
+    "briefing": {
+      "default_time": "08:00",
+      "max_lines": 30,
+      "retention_days": 30
+    },
+    "delegation": {
+      "enabled": false,
+      "delegates": [],
+      "allowed_types": ["scope_access"]
+    },
     "notification_tiers": {
       "critical_violation": "immediate",
       "system_down": "immediate",
