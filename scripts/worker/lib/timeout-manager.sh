@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 # Timeout Manager Library
 # Provides soft-then-hard timeout enforcement with bounded extension handling

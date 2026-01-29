@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 # Sub-agent Scope Library
 # Provides hierarchical identity generation and constraint derivation for worker parallelization

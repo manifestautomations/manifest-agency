@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 # Scope Validator Library
 # Pre-flight write conflict detection for parallel sub-agent execution

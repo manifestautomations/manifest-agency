@@ -34,8 +34,6 @@
 #     - Check if parallelization makes sense per CONTEXT.md rules
 #     - Returns "parallel" or "serial" recommendation
 
-set -euo pipefail
-
 # --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
