@@ -73,3 +73,13 @@ After generation, briefings are archived to:
 `.worker/briefings/history/YYYY-MM-DD.md`
 
 Previous briefings kept for 30 days for trend analysis.
+
+## Error Handling
+
+- First briefing uses last 24 hours as baseline
+- If generation fails, check `.worker/briefings/` permissions
+
+## Options
+
+- **On-demand:** Just run `/briefing` anytime
+- **Scheduled:** Configure cron for daily 08:00 (see docs)

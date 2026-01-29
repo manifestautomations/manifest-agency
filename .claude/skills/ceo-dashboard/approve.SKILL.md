@@ -89,3 +89,17 @@ The approval workflow is managed by **approval-workflow.sh** which:
 All decisions are logged to:
 - `.worker/approvals/registry.jsonl` - Append-only audit log
 - `.worker/audit/` - Integration with Phase 4 audit infrastructure
+
+## Error Handling
+
+- "Approval not found" - ID may have been processed or expired
+- "Cannot auto-deny critical violations" - These require manual decision
+
+## Approval Types
+
+| Type | Description | Auto-deny |
+|------|-------------|-----------|
+| `trust_promotion` | Agent requesting higher trust level | After 24h |
+| `critical_violation` | Agent triggered critical guardrail | Never |
+| `scope_access` | Agent requesting expanded file access | After 24h |
+| `cross_workspace` | Agent requesting cross-project operation | After 24h |
