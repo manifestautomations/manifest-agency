@@ -24,3 +24,24 @@
 # Orchestrator dispatch state (ephemeral runtime data)
 .worker/dispatch/*
 !.worker/dispatch/.gitkeep
+
+# Approval workflow state (registry.jsonl tracked for audit trail)
+.worker/approvals/pending/*
+!.worker/approvals/pending/.gitkeep
+.worker/approvals/approved/*
+!.worker/approvals/approved/.gitkeep
+.worker/approvals/denied/*
+!.worker/approvals/denied/.gitkeep
+!.worker/approvals/.gitkeep
+!.worker/approvals/registry.jsonl
+
+# Briefing state (history archived, current state ephemeral)
+.worker/briefings/*
+!.worker/briefings/.gitkeep
+!.worker/briefings/history/
+.worker/briefings/history/*
+!.worker/briefings/history/.gitkeep
+
+# Dashboard cache (ephemeral performance cache)
+.worker/cache/*
+!.worker/cache/.gitkeep
