@@ -245,6 +245,13 @@ Recent decisions affecting current work:
 - Approval state structure: pending/approved/denied subdirectories with registry.jsonl audit trail
 - .gitkeep pattern extended to .worker/approvals/, .worker/briefings/, .worker/cache/
 
+**From 07-02 (Dashboard Data Aggregation):**
+- Cache stable metrics (trust, velocity) with 5-minute TTL
+- Always fetch live data for dynamic metrics (agents, approvals)
+- Script invocation via `bash -c '. script.sh'` for MINGW64 compatibility
+- Mustache-style placeholders in dashboard template for rendering
+- Cross-platform date handling (GNU/BSD fallback pattern)
+
 **From 07-03 (Approval Workflow):**
 - Critical violations use infinite timeout (9999-12-31T23:59:59Z) - never auto-deny
 - Re-source guard skipped when script run directly (BASH_SOURCE[0] == $0)
