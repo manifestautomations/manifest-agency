@@ -4,6 +4,10 @@
 # Provides soft-then-hard timeout enforcement with bounded extension handling
 # for worker sub-agents.
 
+# Include guard - prevent multiple sourcing
+[[ -n "${_TIMEOUT_MANAGER_SOURCED:-}" ]] && return 0
+_TIMEOUT_MANAGER_SOURCED=1
+
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

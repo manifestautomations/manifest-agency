@@ -4,6 +4,10 @@
 # Pre-flight write conflict detection for parallel sub-agent execution
 # Validates that write scopes don't overlap before spawning any agents in a wave
 
+# Include guard - prevent multiple sourcing
+[[ -n "${_SCOPE_VALIDATOR_SOURCED:-}" ]] && return 0
+_SCOPE_VALIDATOR_SOURCED=1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source dependencies

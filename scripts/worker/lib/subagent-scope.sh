@@ -3,6 +3,10 @@
 # Sub-agent Scope Library
 # Provides hierarchical identity generation and constraint derivation for worker parallelization
 
+# Include guard - prevent multiple sourcing
+[[ -n "${_SUBAGENT_SCOPE_SOURCED:-}" ]] && return 0
+_SUBAGENT_SCOPE_SOURCED=1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MAX_NESTING_DEPTH=2
 

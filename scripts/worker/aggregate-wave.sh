@@ -26,7 +26,9 @@
 #   - git (version control)
 #   - yq (YAML processing, optional for verification)
 
-set -euo pipefail
+# Include guard - prevent multiple sourcing
+[[ -n "${_AGGREGATE_WAVE_SOURCED:-}" ]] && return 0
+_AGGREGATE_WAVE_SOURCED=1
 
 # --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -34,6 +34,10 @@
 #     - Check if parallelization makes sense per CONTEXT.md rules
 #     - Returns "parallel" or "serial" recommendation
 
+# Include guard - prevent multiple sourcing
+[[ -n "${_GRAPH_PARSER_SOURCED:-}" ]] && return 0
+_GRAPH_PARSER_SOURCED=1
+
 # --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

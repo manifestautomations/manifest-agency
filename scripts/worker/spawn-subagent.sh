@@ -25,7 +25,9 @@
 #   - scripts/worker/lib/timeout-manager.sh
 #   - scripts/worker/lib/scope-validator.sh
 
-set -euo pipefail
+# Include guard - prevent multiple sourcing
+[[ -n "${_SPAWN_SUBAGENT_SOURCED:-}" ]] && return 0
+_SPAWN_SUBAGENT_SOURCED=1
 
 # --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

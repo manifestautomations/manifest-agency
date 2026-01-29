@@ -21,17 +21,21 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 WORKER_DIR="$REPO_ROOT/.worker"
 LIB_DIR="$REPO_ROOT/.claude/skills/worker/lib"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
+# Save original SCRIPT_DIR before sourcing libs that may overwrite it
+WORKER_SCRIPT_DIR="$SCRIPT_DIR"
 
 # --- Source libraries ---
+# Phase 3/4 core libs (may overwrite SCRIPT_DIR)
 source "$LIB_DIR/logger.sh"
 source "$LIB_DIR/lock.sh"
 source "$LIB_DIR/parser.sh"
 source "$LIB_DIR/audit.sh"
 source "$LIB_DIR/validator.sh"
 source "$LIB_DIR/hooks.sh"
-source "$SCRIPT_DIR/lib/graph-parser.sh"
-source "$SCRIPT_DIR/spawn-subagent.sh"
-source "$SCRIPT_DIR/aggregate-wave.sh"
+# Phase 6 parallelization libs (use saved path)
+source "$WORKER_SCRIPT_DIR/lib/graph-parser.sh"
+source "$WORKER_SCRIPT_DIR/spawn-subagent.sh"
+source "$WORKER_SCRIPT_DIR/aggregate-wave.sh"
 
 # --- Parse arguments ---
 ISSUE_NUMBER=""
