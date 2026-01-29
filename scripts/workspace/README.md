@@ -159,6 +159,74 @@ Warnings:
 - `0`: All required structure present (may have warnings)
 - `1`: Required structure missing or path doesn't exist
 
+### workspace-health.sh
+
+Check health status of workspaces before dispatch operations.
+
+**Health Stages:**
+
+1. **Git State**
+   - Not a git repo -> RED
+   - Detached HEAD -> YELLOW
+   - Uncommitted changes -> YELLOW
+   - Untracked source files -> YELLOW
+
+2. **Structure**
+   - Missing .planning/ -> RED
+   - Missing trust ledger -> RED
+   - Missing .claude/ -> YELLOW
+
+3. **Trust Ledger Format**
+   - Missing required headers -> YELLOW
+
+**Status Meanings:**
+
+| Status | Meaning | Dispatch |
+|--------|---------|----------|
+| GREEN | Healthy, no issues | Allowed |
+| YELLOW | Warnings present | Allowed with caution |
+| RED | Blocking issues | Blocked |
+
+**Usage:**
+```bash
+# Check all registered workspaces
+bash -c 'source scripts/workspace/workspace-health.sh; check_all_workspaces'
+
+# Check single workspace
+bash -c 'source scripts/workspace/workspace-health.sh; print_workspace_health "/path/to/workspace"'
+
+# Check by workspace name
+bash -c 'source scripts/workspace/workspace-health.sh; _workspace_health_main "project-name"'
+```
+
+**Example output (all workspaces):**
+```
+Workspace Health Status
+=======================
+
+[OK]   project-a
+[WARN] project-b:                      Uncommitted changes present
+[ERR]  project-c:                      Missing trust ledger
+[SKIP] project-d                       (not initialized)
+
+Some workspaces have blocking issues (RED status).
+```
+
+**Example output (single workspace):**
+```
+Workspace: project-name
+Path: /home/user/projects/project-name
+Status: YELLOW
+
+Issues:
+  - Uncommitted changes present
+  - Missing .claude/ directory (optional)
+```
+
+**Exit codes:**
+- `0`: All checked workspaces are GREEN or YELLOW
+- `1`: At least one workspace is RED (or path not found)
+
 ## Sourcing Functions
 
 All scripts export functions that can be sourced by other scripts:
@@ -181,6 +249,14 @@ if validate_workspace_structure "$path"; then
     echo "Workspace is valid"
 else
     echo "Workspace has issues"
+fi
+
+# Source workspace-health.sh
+source scripts/workspace/workspace-health.sh
+check_workspace_health "$path"
+if [[ "$HEALTH_STATUS" == "RED" ]]; then
+    echo "Cannot dispatch - workspace has blocking issues"
+    echo "Issues: ${HEALTH_ISSUES[*]}"
 fi
 ```
 
