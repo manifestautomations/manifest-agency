@@ -9,20 +9,20 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 6 of 7 (Worker Parallelization) - IN PROGRESS
-Plan: 4 of 5 complete (80%)
-Status: In progress
-Last activity: 2026-01-29 — Completed 06-04-PLAN.md (Scope Validator and Spawner)
+Phase: 6 of 7 (Worker Parallelization) - COMPLETE
+Plan: 5 of 5 complete (100%)
+Status: Phase complete
+Last activity: 2026-01-29 — Completed 06-05-PLAN.md (Wave Aggregation and Worker Integration)
 
-Progress: [████████░░] 80% (Phase 6)
-Overall:  [████████░░] 80% (25 of 31 plans)
+Progress: [██████████] 100% (Phase 6)
+Overall:  [████████░░] 84% (26 of 31 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25
-- Average duration: 4.4 min
-- Total execution time: 1.8 hours
+- Total plans completed: 26
+- Average duration: 4.3 min
+- Total execution time: 1.9 hours
 
 **By Phase:**
 
@@ -33,10 +33,10 @@ Overall:  [████████░░] 80% (25 of 31 plans)
 | 03-single-worker | 4 | 24min | 6min |
 | 04-trust-guardrails | 5 | 26min | 5.2min |
 | 05-orchestration | 5 | 20min | 4min |
-| 06-worker-parallelization | 4 | 20min | 5min |
+| 06-worker-parallelization | 5 | 24min | 4.8min |
 
 **Recent Trend:**
-- Last 5 plans: 05-05 (4min), 06-01 (3min), 06-02 (5min), 06-03 (3min), 06-04 (6min)
+- Last 5 plans: 06-01 (3min), 06-02 (5min), 06-03 (3min), 06-04 (6min), 06-05 (4min)
 - Trend: Consistent 3-6min execution per plan
 
 *Updated after each plan completion*
@@ -221,6 +221,17 @@ Recent decisions affecting current work:
 - Immediate PID capture after & prevents race conditions
 - validate_wave_scopes called before any spawn_subagent calls
 
+**From 06-05 (Wave Aggregation and Worker Integration):**
+- Wave commits include all sub-agent work in single atomic commit
+- Verification pipeline: structural (file exists) then syntactic (code parses)
+- Rollback unstages and restores without history pollution
+- Serial execution is default when no execution graph present
+- Worker execute.sh integration with automatic parallelization detection
+- PLAN.md location: .worker/plans/issue-N-PLAN.md (future integration point)
+- Conditional execution in execute.sh: serial (existing) or parallel (sub-agents)
+- aggregate_wave_results, create_wave_commit, rollback_wave, handle_wave_failure functions
+- execute_with_subagents function for wave-based parallel execution with DAG traversal
+
 ### Pending Todos
 
 None yet.
@@ -231,6 +242,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T03:14:44Z
-Stopped at: Completed 06-04-PLAN.md (Scope Validator and Spawner)
+Last session: 2026-01-29T03:21:59Z
+Stopped at: Completed 06-05-PLAN.md (Wave Aggregation and Worker Integration) - Phase 6 COMPLETE
 Resume file: None
