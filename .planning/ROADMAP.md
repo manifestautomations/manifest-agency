@@ -138,10 +138,15 @@ Plans:
   2. High-stakes actions have approval gates requiring CEO judgment
   3. Anti-Gravity Mission Control serves as primary inbox for agent communication
   4. Daily briefings automatically aggregate completions, in-progress work, blockers, and escalations
-**Plans**: TBD
+**Plans**: 6 plans in 5 waves
 
 Plans:
-- [ ] 07-01: TBD during plan-phase
+- [ ] 07-01-PLAN.md - Skill infrastructure: SKILL.md files and directory structure (CEO-01, CEO-03)
+- [ ] 07-02-PLAN.md - Dashboard aggregation: status script and ASCII template (CEO-01)
+- [ ] 07-03-PLAN.md - Approval workflow: file-based state management (CEO-02)
+- [ ] 07-04-PLAN.md - Briefing generation: five-section daily briefing (CEO-04)
+- [ ] 07-05-PLAN.md - Integration: render script and skill finalization (CEO-01, CEO-03)
+- [ ] 07-06-PLAN.md - Documentation and verification checkpoint (CEO-01, CEO-02, CEO-03, CEO-04)
 
 ## Progress
 
@@ -156,4 +161,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 4. Trust Guardrails | 5/5 | Complete | 2026-01-28 |
 | 5. Orchestration | 5/5 | Complete | 2026-01-28 |
 | 6. Worker Parallelization | 7/7 | Complete | 2026-01-29 |
-| 7. CEO Interface | 0/TBD | Not started | - |
+| 7. CEO Interface | 0/6 | Not started | - |
