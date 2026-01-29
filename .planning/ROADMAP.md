@@ -20,21 +20,22 @@ See `.planning/MILESTONES.md` for v1.0 details.
 
 **Milestone Goal:** Enable a real workday managing 2-3 repos through Anti-Gravity Agent Manager with unified visibility and cross-workspace dispatch.
 
-#### Phase 8: Workspace Foundation
+#### Phase 8: Workspace Foundation ✓
 **Goal**: Establish workspace registry and isolation boundaries before any cross-workspace execution
 **Depends on**: Phase 7 (v1.0 complete)
 **Requirements**: WKSP-01, WKSP-02, WKSP-03, WKSP-04
 **Success Criteria** (what must be TRUE):
-  1. CEO can list all registered workspaces and their health status
-  2. New project can be bootstrapped as managed workspace via single command
-  3. Each workspace maintains its own trust ledger (scores isolated between projects)
-  4. Invalid workspace registration fails with clear error message
+  1. CEO can list all registered workspaces and their health status ✓
+  2. New project can be bootstrapped as managed workspace via single command ✓
+  3. Each workspace maintains its own trust ledger (scores isolated between projects) ✓
+  4. Invalid workspace registration fails with clear error message ✓
 **Plans**: 3 plans in 3 waves
+**Completed**: 2026-01-29
 
 Plans:
-- [ ] 08-01-PLAN.md - Workspace discovery and name resolution (Wave 1)
-- [ ] 08-02-PLAN.md - Workspace health and validation (Wave 2)
-- [ ] 08-03-PLAN.md - Workspace bootstrap with trust isolation (Wave 3)
+- [x] 08-01-PLAN.md - Workspace discovery and name resolution (Wave 1)
+- [x] 08-02-PLAN.md - Workspace health and validation (Wave 2)
+- [x] 08-03-PLAN.md - Workspace bootstrap with trust isolation (Wave 3)
 
 #### Phase 9: Cross-Workspace Dispatch
 **Goal**: CEO can dispatch work to any registered workspace by name
@@ -103,7 +104,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 8. Workspace Foundation | v1.1 | 0/3 | Planned | - |
+| 8. Workspace Foundation | v1.1 | 3/3 | ✓ Complete | 2026-01-29 |
 | 9. Cross-Workspace Dispatch | v1.1 | 0/2 | Not started | - |
 | 10. Portfolio Visibility | v1.1 | 0/4 | Not started | - |
 | 11. Trust & Approval Gates | v1.1 | 0/2 | Not started | - |

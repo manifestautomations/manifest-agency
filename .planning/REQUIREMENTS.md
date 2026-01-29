@@ -9,10 +9,10 @@ Requirements for multi-workspace orchestration. Each maps to roadmap phases.
 
 ### Workspace Foundation
 
-- [ ] **WKSP-01**: Agency can register child workspaces via config file
-- [ ] **WKSP-02**: Each workspace has isolated trust ledger (scores don't leak between projects)
-- [ ] **WKSP-03**: CEO can bootstrap new project as managed workspace via script
-- [ ] **WKSP-04**: System validates registered workspace health (repo exists, GSD setup present)
+- [x] **WKSP-01**: Agency can register child workspaces via config file
+- [x] **WKSP-02**: Each workspace has isolated trust ledger (scores don't leak between projects)
+- [x] **WKSP-03**: CEO can bootstrap new project as managed workspace via script
+- [x] **WKSP-04**: System validates registered workspace health (repo exists, GSD setup present)
 
 ### Cross-Workspace Dispatch
 
@@ -78,10 +78,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WKSP-01 | Phase 8 | Pending |
-| WKSP-02 | Phase 8 | Pending |
-| WKSP-03 | Phase 8 | Pending |
-| WKSP-04 | Phase 8 | Pending |
+| WKSP-01 | Phase 8 | Complete |
+| WKSP-02 | Phase 8 | Complete |
+| WKSP-03 | Phase 8 | Complete |
+| WKSP-04 | Phase 8 | Complete |
 | DISP-01 | Phase 9 | Pending |
 | DISP-02 | Phase 9 | Pending |
 | VIEW-01 | Phase 10 | Pending |
