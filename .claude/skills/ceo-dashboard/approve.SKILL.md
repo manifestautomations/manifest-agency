@@ -1,6 +1,6 @@
 ---
 name: approve
-description: Approve or deny a pending high-stakes action request from an agent. Requires approval ID.
+description: Approve or deny a pending high-stakes action request from an agent
 disable-model-invocation: true
 allowed-tools: Bash, Read
 ---
@@ -13,109 +13,74 @@ Handle pending approval requests from agents for high-stakes actions.
 
 ## Execution
 
-### List Pending Approvals (no ID provided)
+Handle approval workflow based on what's provided:
 
-When invoked without an approval ID, list all pending approvals:
-
-```bash
-bash .claude/skills/ceo-dashboard/scripts/list-approvals.sh
-```
-
-Or manually read from `.worker/approvals/pending/`:
-
-```
-PENDING APPROVALS
------------------
-ID        | Type           | Agent      | Timeout
-APR-001   | deploy-prod    | worker-1   | 12 min
-APR-002   | delete-branch  | worker-3   | 45 min
-APR-003   | modify-schema  | worker-2   | 2 hrs
-
-Use: /approve APR-001 [approve|deny] [reason]
-```
-
-### Show Approval Details (ID provided)
-
-When invoked with an approval ID, show full context:
+### 1. List pending approvals (if no ID provided)
 
 ```bash
-bash .claude/skills/ceo-dashboard/scripts/show-approval.sh APR-001
+bash .claude/skills/ceo-dashboard/scripts/approval-workflow.sh list
 ```
 
-Display:
-- **Request ID**: APR-001
-- **Type**: High-stakes action category
-- **Requesting Agent**: Agent ID that triggered the request
-- **Reason**: Why the action was flagged for approval
-- **Context**: What the agent was trying to do
-- **Impact**: What happens if approved vs denied
-- **Timeout**: Time remaining until auto-deny
-- **Created**: When the request was submitted
+Shows all pending approvals with:
+- Approval ID
+- Type
+- Agent
+- Time remaining
 
-### Process Decision
-
-Accept one of:
-- `approve` - Allow the action to proceed
-- `deny` - Block the action
-
-Optional justification for audit trail:
-- `/approve APR-001 approve "Verified deployment checklist complete"`
-- `/approve APR-001 deny "Not ready - missing tests"`
-
-Execute transition via script:
+### 2. Show approval context (if ID provided)
 
 ```bash
-bash .claude/skills/ceo-dashboard/scripts/process-approval.sh APR-001 approve "justification"
+bash .claude/skills/ceo-dashboard/scripts/approval-workflow.sh context APPROVAL_ID
 ```
 
-Or manually:
-1. Read approval file from `.worker/approvals/pending/APR-001.json`
-2. Update with decision, justification, timestamp
-3. Move to `.worker/approvals/approved/` or `.worker/approvals/denied/`
-4. Signal waiting agent (if any) via lock release or webhook
+Displays full details:
+- Request type and reason
+- Requesting agent
+- Impact assessment
+- Time until timeout
 
-## Approval Types
+### 3. Process decision
 
-| Type | Severity | Default Timeout | Auto-Resolution |
-|------|----------|-----------------|-----------------|
-| deploy-prod | CRITICAL | 30 min | Deny |
-| delete-branch | HIGH | 1 hour | Deny |
-| modify-schema | HIGH | 2 hours | Deny |
-| external-api | MEDIUM | 4 hours | Deny |
-| bulk-update | MEDIUM | 4 hours | Deny |
-| new-dependency | LOW | 24 hours | Approve |
+**For "approve":**
+```bash
+bash .claude/skills/ceo-dashboard/scripts/approval-workflow.sh approve APPROVAL_ID "justification"
+```
+
+**For "deny":**
+```bash
+bash .claude/skills/ceo-dashboard/scripts/approval-workflow.sh deny APPROVAL_ID "reason"
+```
+
+Always confirm the action before executing.
+Show the result (approved/denied) and any follow-up effects.
+
+## Script Integration
+
+The approval workflow is managed by **approval-workflow.sh** which:
+
+1. Reads pending approvals from `.worker/approvals/pending/`
+2. Moves decisions to `.worker/approvals/approved/` or `.worker/approvals/denied/`
+3. Logs all transitions to `.worker/approvals/registry.jsonl`
+
+## Approval States
+
+| Directory | Meaning |
+|-----------|---------|
+| `pending/` | Awaiting CEO decision |
+| `approved/` | CEO approved the request |
+| `denied/` | CEO denied the request |
 
 ## Approval File Format
 
 ```json
 {
-  "id": "APR-001",
-  "type": "deploy-prod",
-  "agent": "worker-1",
-  "reason": "Trust level 2 agent attempting production deployment",
-  "context": {
-    "task": "Deploy feature X to production",
-    "issue": 42,
-    "files_affected": ["deploy.sh", "config.prod.json"]
-  },
+  "approval_id": "approval-1234567890",
+  "type": "trust_promotion",
+  "agent_id": "worker-1",
+  "context": {"current": 2, "target": 3},
   "created_at": "2026-01-29T06:30:00Z",
   "timeout_at": "2026-01-29T07:00:00Z",
-  "auto_resolution": "deny"
-}
-```
-
-## Decision File Format (after processing)
-
-```json
-{
-  "id": "APR-001",
-  "type": "deploy-prod",
-  "agent": "worker-1",
-  "decision": "approved",
-  "decided_by": "ceo",
-  "justification": "Verified deployment checklist complete",
-  "decided_at": "2026-01-29T06:45:00Z",
-  "original_request": { ... }
+  "status": "pending"
 }
 ```
 
@@ -124,15 +89,3 @@ Or manually:
 All decisions are logged to:
 - `.worker/approvals/registry.jsonl` - Append-only audit log
 - `.worker/audit/` - Integration with Phase 4 audit infrastructure
-
-Registry entry format:
-```json
-{"id":"APR-001","type":"deploy-prod","decision":"approved","decided_by":"ceo","decided_at":"2026-01-29T06:45:00Z"}
-```
-
-## Error Handling
-
-- **Invalid ID**: "Approval APR-XXX not found in pending queue"
-- **Already processed**: "Approval APR-001 was already [approved/denied] at [timestamp]"
-- **Timeout expired**: "Approval APR-001 auto-resolved to [deny] due to timeout"
-- **Invalid decision**: "Decision must be 'approve' or 'deny'"
