@@ -185,6 +185,26 @@ create_approval_request() {
     }')
   _append_to_registry "$registry_entry"
 
+  # Deliver approval request to Inbox conversation
+  local inbox_script
+  inbox_script="$(dirname "${BASH_SOURCE[0]}")/../inbox-integration.sh"
+  if [[ -f "$inbox_script" ]]; then
+    # shellcheck source=/dev/null
+    source "$inbox_script" 2>/dev/null || true
+
+    # Get notification tier for this approval type
+    local tier
+    tier=$(get_notification_tier "$approval_type" 2>/dev/null || echo "delayed")
+
+    # Format context for display
+    local context_display
+    context_display=$(echo "$context_json" | jq -r 'if type == "object" then (.reason // .description // "Approval required") else . end' 2>/dev/null || echo "Approval required")
+
+    # Format and deliver to Inbox
+    format_approval_request "$approval_id" "$approval_type" "$agent_id" "$context_display" 2>/dev/null | deliver_to_inbox "$tier" 2>/dev/null || true
+    echo "[approval] Delivered to Inbox (tier: $tier)" >&2
+  fi
+
   # Return approval ID
   echo "$approval_id"
   return 0

@@ -484,3 +484,31 @@ _Generated: ${timestamp}_"
 
 # Execute
 generate_briefing "$OUTPUT"
+
+# -----------------------------------------------------------------------------
+# Inbox Integration
+# -----------------------------------------------------------------------------
+
+# Deliver briefing notification to Inbox conversation
+INBOX_INTEGRATION_SCRIPT="$SCRIPT_DIR/../inbox-integration.sh"
+if [ -f "$INBOX_INTEGRATION_SCRIPT" ]; then
+  # shellcheck source=/dev/null
+  source "$INBOX_INTEGRATION_SCRIPT"
+
+  # Check for duplicate delivery (prevents double-delivery on manual runs)
+  local briefing_id
+  briefing_id="briefing-$(date +%Y-%m-%d)"
+  local is_duplicate
+  is_duplicate=$(check_duplicate_delivery "$briefing_id")
+
+  if [ "$is_duplicate" = "false" ]; then
+    # Get notification tier for briefings
+    TIER=$(get_notification_tier "briefing")
+
+    # Format and deliver briefing notification
+    format_briefing_notification "$OUTPUT" | deliver_to_inbox "$TIER"
+    echo "[briefing] Delivered to Inbox (tier: $TIER)"
+  else
+    echo "[briefing] Skipped Inbox delivery (already delivered today)"
+  fi
+fi

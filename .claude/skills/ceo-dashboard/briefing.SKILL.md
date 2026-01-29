@@ -11,6 +11,9 @@ Generate a comprehensive daily briefing for the CEO with actionable insights.
 
 **Manual invocation only** - This skill does not auto-trigger to prevent accidental briefing generation.
 
+**Note:** Briefings are automatically delivered to the Inbox conversation.
+Running /briefing manually will also deliver to Inbox (with duplicate protection - only one delivery per day).
+
 ## Execution
 
 Generate the daily briefing:
