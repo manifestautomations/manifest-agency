@@ -29,7 +29,7 @@ source "$LIB_DIR/parser.sh"
 source "$LIB_DIR/audit.sh"
 source "$LIB_DIR/validator.sh"
 source "$LIB_DIR/hooks.sh"
-source "$LIB_DIR/graph-parser.sh"
+source "$SCRIPT_DIR/lib/graph-parser.sh"
 source "$SCRIPT_DIR/spawn-subagent.sh"
 source "$SCRIPT_DIR/aggregate-wave.sh"
 
