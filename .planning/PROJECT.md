@@ -14,6 +14,19 @@ Wake up, brew coffee, check the inbox. The inbox is Mission Control in Anti-Grav
 
 Not writing code line by line. Not context-switching between terminals. Walking the floor, checking in on teams, making decisions, pointing in the right direction. Leverage AI the way a CEO leverages an organization.
 
+## Current Milestone: v1.1 Multi-Repo Orchestration
+
+**Goal:** Enable a real workday managing 2-3 repos through Anti-Gravity Agent Manager.
+
+**Target capabilities:**
+- Anti-Gravity Agent Manager as primary CEO interface (not just terminal)
+- Parent repo as orchestrator context for child workspace submodules
+- Orchestrator can locate, update, and dispatch to child workspaces
+- Status and results flow back to unified inbox
+- Full integration test of v1.0 components in multi-workspace context
+
+**Success criteria:** Run a real multi-repo workday — dispatch work to 2-3 different repos, get results aggregated in inbox.
+
 ## Current State
 
 **v1.0 MVP shipped** (2026-01-29)
@@ -153,6 +166,10 @@ Comprehensive daily briefing via Anti-Gravity Mission Control:
 
 ### Active
 
+- [ ] Anti-Gravity Agent Manager integration (multi-workspace)
+- [ ] Cross-workspace orchestration (parent → child dispatch)
+- [ ] Multi-repo status aggregation in unified inbox
+- [ ] Integration testing of v1.0 in Agent Manager context
 - [ ] Multiple agent personas (specialists vs generalists)
 - [ ] Workflow templates for repeatable patterns
 
@@ -179,4 +196,4 @@ Comprehensive daily briefing via Anti-Gravity Mission Control:
 | Tiered notification delivery | Immediate/delayed/silent based on urgency | ✓ Good — inbox integration |
 
 ---
-*Last updated: 2026-01-29 after v1.0 milestone*
+*Last updated: 2026-01-29 after v1.1 milestone started*
