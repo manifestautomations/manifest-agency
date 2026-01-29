@@ -401,3 +401,259 @@ list_pending_approvals() {
 
   echo "$results" | jq .
 }
+
+# -----------------------------------------------------------------------------
+# Stale Detection and Auto-Deny Functions
+# -----------------------------------------------------------------------------
+
+# Check for stale approvals (< 2 hours remaining)
+# Returns: JSON array with stale status for each pending approval
+check_stale_approvals() {
+  _ensure_approval_dirs
+
+  local now_epoch
+  now_epoch=$(_get_epoch)
+
+  local results="[]"
+
+  # Iterate all pending approval files
+  for pending_file in "$PENDING_DIR"/*.json; do
+    # Skip if no files match
+    [[ -e "$pending_file" ]] || continue
+
+    local request
+    request=$(cat "$pending_file")
+
+    local approval_id approval_type timeout_at agent_id created_at
+    approval_id=$(echo "$request" | jq -r '.approval_id')
+    approval_type=$(echo "$request" | jq -r '.type')
+    timeout_at=$(echo "$request" | jq -r '.timeout_at')
+    agent_id=$(echo "$request" | jq -r '.agent_id')
+    created_at=$(echo "$request" | jq -r '.created_at')
+
+    # Skip critical violations (infinite timeout)
+    if [[ "$approval_type" == "critical_violation" ]]; then
+      local entry
+      entry=$(jq -nc \
+        --arg approval_id "$approval_id" \
+        --arg type "$approval_type" \
+        --arg agent_id "$agent_id" \
+        --arg created_at "$created_at" \
+        --arg status "active" \
+        --arg time_remaining "infinite" \
+        --arg note "critical violations never expire" \
+        '{
+          approval_id: $approval_id,
+          type: $type,
+          agent_id: $agent_id,
+          created_at: $created_at,
+          status: $status,
+          time_remaining: $time_remaining,
+          note: $note
+        }')
+      results=$(echo "$results" | jq --argjson entry "$entry" '. + [$entry]')
+      continue
+    fi
+
+    # Calculate time remaining
+    local timeout_epoch
+    timeout_epoch=$(_timestamp_to_epoch "$timeout_at")
+    local remaining=$((timeout_epoch - now_epoch))
+
+    local status
+    if [[ $remaining -lt 0 ]]; then
+      status="expired"
+    elif [[ $remaining -lt $STALE_THRESHOLD_SECONDS ]]; then
+      status="stale"
+    else
+      status="active"
+    fi
+
+    # Format time remaining for humans
+    local hours_remaining minutes_remaining
+    if [[ $remaining -gt 0 ]]; then
+      hours_remaining=$((remaining / 3600))
+      minutes_remaining=$(((remaining % 3600) / 60))
+    else
+      hours_remaining=0
+      minutes_remaining=0
+    fi
+
+    local entry
+    entry=$(jq -nc \
+      --arg approval_id "$approval_id" \
+      --arg type "$approval_type" \
+      --arg agent_id "$agent_id" \
+      --arg created_at "$created_at" \
+      --arg timeout_at "$timeout_at" \
+      --arg status "$status" \
+      --arg time_remaining_seconds "$remaining" \
+      --arg time_remaining_human "${hours_remaining}h ${minutes_remaining}m" \
+      '{
+        approval_id: $approval_id,
+        type: $type,
+        agent_id: $agent_id,
+        created_at: $created_at,
+        timeout_at: $timeout_at,
+        status: $status,
+        time_remaining_seconds: ($time_remaining_seconds | tonumber),
+        time_remaining_human: $time_remaining_human
+      }')
+    results=$(echo "$results" | jq --argjson entry "$entry" '. + [$entry]')
+  done
+
+  echo "$results" | jq .
+}
+
+# Process all expired approvals (auto-deny)
+# Skips critical_violation types which never expire
+# Returns: count of auto-denied approvals
+process_expired_approvals() {
+  _ensure_approval_dirs
+
+  local now_epoch
+  now_epoch=$(_get_epoch)
+  local count=0
+
+  # Iterate all pending approval files
+  for pending_file in "$PENDING_DIR"/*.json; do
+    # Skip if no files match
+    [[ -e "$pending_file" ]] || continue
+
+    local request
+    request=$(cat "$pending_file")
+
+    local approval_id approval_type timeout_at
+    approval_id=$(echo "$request" | jq -r '.approval_id')
+    approval_type=$(echo "$request" | jq -r '.type')
+    timeout_at=$(echo "$request" | jq -r '.timeout_at')
+
+    # Skip critical violations (never auto-deny)
+    if [[ "$approval_type" == "critical_violation" ]]; then
+      continue
+    fi
+
+    # Check if expired
+    local timeout_epoch
+    timeout_epoch=$(_timestamp_to_epoch "$timeout_at")
+    local remaining=$((timeout_epoch - now_epoch))
+
+    if [[ $remaining -lt 0 ]]; then
+      # Auto-deny this approval
+      local decided_at
+      decided_at=$(_get_timestamp)
+
+      # Update request with auto-deny decision
+      local updated_request
+      updated_request=$(echo "$request" | jq \
+        --arg status "denied" \
+        --arg decided_at "$decided_at" \
+        '. + {
+          status: $status,
+          decided_at: $decided_at,
+          decision: {
+            outcome: "denied",
+            reason: "Auto-denied: timeout after 24 hours",
+            decided_at: $decided_at,
+            auto_denied: true
+          }
+        }')
+
+      # Write to denied directory
+      local denied_file="$DENIED_DIR/${approval_id}.json"
+      echo "$updated_request" > "$denied_file"
+
+      # Remove from pending
+      rm -f "$pending_file"
+
+      # Append to registry with auto_denied flag
+      local agent_id
+      agent_id=$(echo "$request" | jq -r '.agent_id')
+
+      local registry_entry
+      registry_entry=$(jq -nc \
+        --arg event "approval_auto_denied" \
+        --arg approval_id "$approval_id" \
+        --arg approval_type "$approval_type" \
+        --arg agent_id "$agent_id" \
+        --arg decided_at "$decided_at" \
+        --arg reason "Auto-denied: timeout after 24 hours" \
+        --argjson auto_denied true \
+        '{
+          event: $event,
+          approval_id: $approval_id,
+          type: $approval_type,
+          agent_id: $agent_id,
+          decided_at: $decided_at,
+          reason: $reason,
+          auto_denied: $auto_denied
+        }')
+      _append_to_registry "$registry_entry"
+
+      echo "[auto-deny] Expired approval auto-denied: $approval_id"
+      count=$((count + 1))
+    fi
+  done
+
+  echo "[process-expired] Auto-denied $count expired approvals"
+  return 0
+}
+
+# Get approval context for a specific approval
+# Arguments: approval_id
+# Returns: JSON with approval details or null if not found
+get_approval_context() {
+  local approval_id="$1"
+
+  if [[ -z "$approval_id" ]]; then
+    echo "[error] Usage: get_approval_context <approval_id>" >&2
+    return 1
+  fi
+
+  local pending_file="$PENDING_DIR/${approval_id}.json"
+  local approved_file="$APPROVED_DIR/${approval_id}.json"
+  local denied_file="$DENIED_DIR/${approval_id}.json"
+
+  local request=""
+  local location=""
+
+  # Check each location
+  if [[ -f "$pending_file" ]]; then
+    request=$(cat "$pending_file")
+    location="pending"
+  elif [[ -f "$approved_file" ]]; then
+    request=$(cat "$approved_file")
+    location="approved"
+  elif [[ -f "$denied_file" ]]; then
+    request=$(cat "$denied_file")
+    location="denied"
+  else
+    echo "null"
+    return 1
+  fi
+
+  # Add time remaining for pending approvals
+  local now_epoch
+  now_epoch=$(_get_epoch)
+  local timeout_at
+  timeout_at=$(echo "$request" | jq -r '.timeout_at')
+  local approval_type
+  approval_type=$(echo "$request" | jq -r '.type')
+
+  local time_remaining
+  if [[ "$approval_type" == "critical_violation" ]]; then
+    time_remaining="infinite"
+  elif [[ "$location" == "pending" ]]; then
+    local timeout_epoch
+    timeout_epoch=$(_timestamp_to_epoch "$timeout_at")
+    time_remaining=$((timeout_epoch - now_epoch))
+  else
+    time_remaining="N/A"
+  fi
+
+  # Return enriched context
+  echo "$request" | jq \
+    --arg location "$location" \
+    --arg time_remaining "$time_remaining" \
+    '. + {location: $location, time_remaining: $time_remaining}'
+}
