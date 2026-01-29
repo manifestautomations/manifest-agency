@@ -16,5 +16,10 @@
     },
     "decay_rate": 5,
     "audit_retention_days": 90
+  },
+  "delegation": {
+    "enabled": false,
+    "delegates": [],
+    "allowed_types": ["scope_access"]
   }
 }

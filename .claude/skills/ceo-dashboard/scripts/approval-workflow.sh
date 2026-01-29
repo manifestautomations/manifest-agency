@@ -21,9 +21,12 @@
 #   .worker/approvals/denied/{approval_id}.json    - Denied requests
 #   .worker/approvals/registry.jsonl               - Append-only audit trail
 
-# Guard against re-sourcing
-[[ -n "${_APPROVAL_WORKFLOW_SOURCED:-}" ]] && return 0
-_APPROVAL_WORKFLOW_SOURCED=1
+# Guard against re-sourcing (only when sourced, not when run directly)
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+  # Being sourced - apply re-source guard
+  [[ -n "${_APPROVAL_WORKFLOW_SOURCED:-}" ]] && return 0
+  _APPROVAL_WORKFLOW_SOURCED=1
+fi
 
 # Directory paths
 APPROVALS_DIR=".worker/approvals"
@@ -657,3 +660,279 @@ get_approval_context() {
     --arg time_remaining "$time_remaining" \
     '. + {location: $location, time_remaining: $time_remaining}'
 }
+
+# -----------------------------------------------------------------------------
+# Delegation Functions
+# -----------------------------------------------------------------------------
+
+# Non-delegatable approval types (require CEO direct action)
+NON_DELEGATABLE_TYPES=("trust_promotion" "critical_violation")
+
+# Check if delegation is allowed for an approval
+# Arguments: approval_id delegate_name
+# Returns: 0 if delegation allowed, 1 if not
+check_delegation() {
+  local approval_id="$1"
+  local delegate_name="$2"
+
+  # Read worker config for delegation settings
+  local config_file=".worker/config.json"
+  if [[ ! -f "$config_file" ]]; then
+    echo "[error] Config file not found: $config_file" >&2
+    return 1
+  fi
+
+  # Check if delegation is enabled
+  local delegation_enabled
+  delegation_enabled=$(jq -r '.delegation.enabled // false' "$config_file")
+  if [[ "$delegation_enabled" != "true" ]]; then
+    echo "[delegation] Delegation is disabled in config" >&2
+    return 1
+  fi
+
+  # Get approval details
+  local pending_file="$PENDING_DIR/${approval_id}.json"
+  if [[ ! -f "$pending_file" ]]; then
+    echo "[error] Approval not found in pending: $approval_id" >&2
+    return 1
+  fi
+
+  local approval_type
+  approval_type=$(jq -r '.type' "$pending_file")
+
+  # Check if type is delegatable
+  for non_delegatable in "${NON_DELEGATABLE_TYPES[@]}"; do
+    if [[ "$approval_type" == "$non_delegatable" ]]; then
+      echo "[delegation] Type '$approval_type' cannot be delegated" >&2
+      return 1
+    fi
+  done
+
+  # Check if delegate is authorized
+  local delegate_authorized
+  delegate_authorized=$(jq -r --arg name "$delegate_name" '.delegation.delegates // [] | index($name) != null' "$config_file")
+  if [[ "$delegate_authorized" != "true" ]]; then
+    echo "[delegation] '$delegate_name' is not an authorized delegate" >&2
+    return 1
+  fi
+
+  # Check if type is in allowed_types
+  local type_allowed
+  type_allowed=$(jq -r --arg type "$approval_type" '.delegation.allowed_types // [] | index($type) != null' "$config_file")
+  if [[ "$type_allowed" != "true" ]]; then
+    echo "[delegation] Type '$approval_type' is not in allowed delegation types" >&2
+    return 1
+  fi
+
+  echo "[delegation] Delegation allowed for $approval_id by $delegate_name"
+  return 0
+}
+
+# Approve with delegation (delegated approval on behalf of CEO)
+# Arguments: approval_id delegator delegate justification
+# Returns: 0 on success, 1 on failure
+approve_with_delegation() {
+  local approval_id="$1"
+  local delegator="$2"
+  local delegate="$3"
+  local justification="${4:-}"
+
+  if [[ -z "$approval_id" || -z "$delegator" || -z "$delegate" ]]; then
+    echo "[error] Usage: approve_with_delegation <approval_id> <delegator> <delegate> [justification]" >&2
+    return 1
+  fi
+
+  # Verify delegation is allowed
+  if ! check_delegation "$approval_id" "$delegate" 2>/dev/null; then
+    echo "[error] Delegation not permitted for this approval" >&2
+    return 1
+  fi
+
+  local pending_file="$PENDING_DIR/${approval_id}.json"
+
+  # Read current request
+  local request
+  request=$(cat "$pending_file")
+
+  # Add decision metadata with delegation details
+  local decided_at
+  decided_at=$(_get_timestamp)
+
+  local updated_request
+  updated_request=$(echo "$request" | jq \
+    --arg status "approved" \
+    --arg decided_at "$decided_at" \
+    --arg justification "$justification" \
+    --arg delegator "$delegator" \
+    --arg delegate "$delegate" \
+    '. + {
+      status: $status,
+      decided_at: $decided_at,
+      decision: {
+        outcome: "approved",
+        justification: (if $justification == "" then null else $justification end),
+        decided_at: $decided_at,
+        delegated: true,
+        delegated_by: $delegator,
+        delegate: $delegate
+      }
+    }')
+
+  # Write to approved directory
+  local approved_file="$APPROVED_DIR/${approval_id}.json"
+  echo "$updated_request" > "$approved_file"
+
+  # Remove from pending
+  rm -f "$pending_file"
+
+  # Append to registry with delegation details
+  local agent_id approval_type
+  agent_id=$(echo "$request" | jq -r '.agent_id')
+  approval_type=$(echo "$request" | jq -r '.type')
+
+  local registry_entry
+  registry_entry=$(jq -nc \
+    --arg event "approval_approved_delegated" \
+    --arg approval_id "$approval_id" \
+    --arg approval_type "$approval_type" \
+    --arg agent_id "$agent_id" \
+    --arg decided_at "$decided_at" \
+    --arg justification "$justification" \
+    --arg delegator "$delegator" \
+    --arg delegate "$delegate" \
+    '{
+      event: $event,
+      approval_id: $approval_id,
+      type: $approval_type,
+      agent_id: $agent_id,
+      decided_at: $decided_at,
+      justification: (if $justification == "" then null else $justification end),
+      delegated_by: $delegator,
+      delegate: $delegate
+    }')
+  _append_to_registry "$registry_entry"
+
+  echo "[approval] Approved (delegated): $approval_id by $delegate on behalf of $delegator"
+  return 0
+}
+
+# Get delegation status
+# Returns: JSON with delegation configuration
+get_delegation_status() {
+  local config_file=".worker/config.json"
+
+  if [[ ! -f "$config_file" ]]; then
+    echo '{"enabled": false, "error": "config not found"}'
+    return 1
+  fi
+
+  jq '{
+    delegation_enabled: (.delegation.enabled // false),
+    delegates: (.delegation.delegates // []),
+    allowed_types: (.delegation.allowed_types // []),
+    non_delegatable: ["trust_promotion", "critical_violation"]
+  }' "$config_file"
+}
+
+# -----------------------------------------------------------------------------
+# CLI Interface
+# -----------------------------------------------------------------------------
+
+# Show help message
+_show_help() {
+  cat <<'HELP'
+approval-workflow.sh - File-based approval state management
+
+USAGE:
+  approval-workflow.sh <command> [arguments]
+
+COMMANDS:
+  create <type> <agent_id> [context_json]
+      Create a new approval request
+      Types: trust_promotion, critical_violation, scope_access, cross_workspace
+
+  approve <approval_id> [justification]
+      Approve a pending request
+
+  deny <approval_id> [reason]
+      Deny a pending request
+
+  list
+      List all pending approvals with time remaining
+
+  check-stale
+      Check for stale/expired approvals
+
+  process-expired
+      Auto-deny all expired approvals (skips critical_violation)
+
+  context <approval_id>
+      Get details for a specific approval
+
+  delegation-status
+      Show delegation configuration
+
+  approve-delegated <approval_id> <delegator> <delegate> [justification]
+      Approve via delegation (for authorized delegates)
+
+  help
+      Show this help message
+
+EXAMPLES:
+  # Create an approval request
+  ./approval-workflow.sh create trust_promotion agent-1 '{"current":2,"target":3}'
+
+  # List pending approvals
+  ./approval-workflow.sh list
+
+  # Approve a request
+  ./approval-workflow.sh approve approval-12345 "Performance criteria met"
+
+  # Check for stale approvals
+  ./approval-workflow.sh check-stale
+
+  # Process expired approvals (auto-deny)
+  ./approval-workflow.sh process-expired
+HELP
+}
+
+# CLI entry point - only runs when script is executed directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  case "${1:-}" in
+    create)
+      create_approval_request "$2" "$3" "${4:-"{}"}"
+      ;;
+    approve)
+      approve_request "$2" "${3:-}"
+      ;;
+    deny)
+      deny_request "$2" "${3:-}"
+      ;;
+    list)
+      list_pending_approvals
+      ;;
+    check-stale)
+      check_stale_approvals
+      ;;
+    process-expired)
+      process_expired_approvals
+      ;;
+    context)
+      get_approval_context "$2"
+      ;;
+    delegation-status)
+      get_delegation_status
+      ;;
+    approve-delegated)
+      approve_with_delegation "$2" "$3" "$4" "${5:-}"
+      ;;
+    help|--help|-h)
+      _show_help
+      ;;
+    *)
+      echo "Usage: $0 {create|approve|deny|list|check-stale|process-expired|context|delegation-status|approve-delegated|help}" >&2
+      echo "Run '$0 help' for detailed usage information." >&2
+      exit 1
+      ;;
+  esac
+fi
