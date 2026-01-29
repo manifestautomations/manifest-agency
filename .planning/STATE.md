@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 12 (Workspace Foundation)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-01-29 — Roadmap created for v1.1
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-29 — Completed 08-01-PLAN.md (Workspace Discovery)
 
-Progress: [##########..........] 50% (v1.0 complete, v1.1 starting)
+Progress: [###########.........] 52% (37 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,7 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Metrics will accumulate after Phase 8 planning
+- Plans completed: 1
+- Tasks completed: 2
+- Lines shipped: ~365
 
 ## Accumulated Context
 
@@ -48,7 +50,10 @@ Summary of major decisions from v1.0:
 - Exit-and-resume for approvals (no polling)
 - Hash-chained audit trail (SHA-256)
 
-v1.1 decisions pending — will accumulate during execution.
+**v1.1 decisions (08-01):**
+- Git plumbing over porcelain for .gitmodules parsing (stable API)
+- Case-insensitive alias matching using ${var,,} expansion
+- Resolution order: exact dir > submodule suffix > alias
 
 ### Research Context
 
@@ -60,10 +65,10 @@ Research completed (see .planning/research/SUMMARY.md):
 
 ### Blockers/Concerns
 
-None — starting Phase 8.
+None.
 
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Roadmap created, ready to plan Phase 8
-Resume file: None (run `/gsd:plan-phase 8`)
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None (run `/gsd:execute-phase 8` to continue)
