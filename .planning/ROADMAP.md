@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Single Worker** - Validate one Claude worker can execute and report via GSD
 - [x] **Phase 4: Trust Guardrails** - Implement hook-based trust enforcement and audit logging
 - [x] **Phase 5: Orchestration** - Add Gemini orchestrator to dispatch work and aggregate status
-- [ ] **Phase 6: Worker Parallelization** - Enable workers to spawn sub-agents for parallel execution
+- [x] **Phase 6: Worker Parallelization** - Enable workers to spawn sub-agents for parallel execution
 - [ ] **Phase 7: CEO Interface** - Complete loop with Mission Control integration and daily briefings
 
 ## Phase Details
@@ -127,7 +127,7 @@ Plans:
 - [x] 06-04-PLAN.md - Scope validator and sub-agent spawner
 - [x] 06-05-PLAN.md - Wave aggregation and worker integration
 - [x] 06-06-PLAN.md - Documentation and verification checkpoint
-- [ ] 06-07-PLAN.md - Gap closure: fix LIB_DIR path and remove set -euo pipefail from libraries
+- [x] 06-07-PLAN.md - Gap closure: fix LIB_DIR path and remove set -euo pipefail from libraries
 
 ### Phase 7: CEO Interface
 **Goal**: Complete CEO loop with Mission Control inbox integration and automated daily briefings
@@ -155,5 +155,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Single Worker | 4/4 | Complete | 2026-01-27 |
 | 4. Trust Guardrails | 5/5 | Complete | 2026-01-28 |
 | 5. Orchestration | 5/5 | Complete | 2026-01-28 |
-| 6. Worker Parallelization | 6/7 | Gap closure | - |
+| 6. Worker Parallelization | 7/7 | Complete | 2026-01-29 |
 | 7. CEO Interface | 0/TBD | Not started | - |
