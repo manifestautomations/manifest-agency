@@ -78,26 +78,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WKSP-01 | — | Pending |
-| WKSP-02 | — | Pending |
-| WKSP-03 | — | Pending |
-| WKSP-04 | — | Pending |
-| DISP-01 | — | Pending |
-| DISP-02 | — | Pending |
-| VIEW-01 | — | Pending |
-| VIEW-02 | — | Pending |
-| VIEW-03 | — | Pending |
-| VIEW-04 | — | Pending |
-| TRST-01 | — | Pending |
-| TRST-02 | — | Pending |
-| TRST-03 | — | Pending |
-| INTG-01 | — | Pending |
+| WKSP-01 | Phase 8 | Pending |
+| WKSP-02 | Phase 8 | Pending |
+| WKSP-03 | Phase 8 | Pending |
+| WKSP-04 | Phase 8 | Pending |
+| DISP-01 | Phase 9 | Pending |
+| DISP-02 | Phase 9 | Pending |
+| VIEW-01 | Phase 10 | Pending |
+| VIEW-02 | Phase 10 | Pending |
+| VIEW-03 | Phase 10 | Pending |
+| VIEW-04 | Phase 10 | Pending |
+| TRST-01 | Phase 11 | Pending |
+| TRST-02 | Phase 11 | Pending |
+| TRST-03 | Phase 11 | Pending |
+| INTG-01 | Phase 12 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 (roadmap pending)
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after initial definition*
+*Last updated: 2026-01-29 after roadmap creation*
