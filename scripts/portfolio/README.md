@@ -1,22 +1,22 @@
-# Portfolio Scripts
+# Portfolio Management Scripts
 
-Scripts for aggregating and displaying status across all managed workspaces.
+Scripts for managing and monitoring multiple workspace portfolios.
 
 ## Scripts
 
 ### portfolio-status.sh
 
-Collects status data from all registered workspaces.
+Aggregates status across all registered workspaces with caching.
 
 **Usage:**
 ```bash
-# Get JSON status (default)
+# Get portfolio status (uses cache if valid)
 bash scripts/portfolio/portfolio-status.sh
 
-# Force refresh (skip cache)
+# Force refresh (ignore cache)
 bash scripts/portfolio/portfolio-status.sh --force
 
-# Get only needs-attention items
+# Get workspaces needing attention
 bash scripts/portfolio/portfolio-status.sh --needs-attention
 ```
 
@@ -25,12 +25,12 @@ bash scripts/portfolio/portfolio-status.sh --needs-attention
 {
   "workspaces": [
     {
-      "name": "project-name",
-      "path": "projects/project-name",
+      "name": "workspace-name",
+      "path": "projects/workspace-name",
       "health": "GREEN|YELLOW|RED",
       "frecency": 42,
       "pending": 0,
-      "last_activity": 1234567890
+      "last_activity": 1769747037
     }
   ],
   "timestamp": "2026-01-30T12:00:00Z"
@@ -38,47 +38,84 @@ bash scripts/portfolio/portfolio-status.sh --needs-attention
 ```
 
 **Health status:**
-- GREEN: Healthy workspace, recent activity
-- YELLOW: Stale (no activity for 3+ days) OR has warnings
-- RED: Trust violations OR broken workspace state
+- **GREEN** - Healthy, no issues
+- **YELLOW** - Warnings present (stale or minor issues)
+- **RED** - Blocking issues, needs attention
+
+**Cache:**
+- Location: `.worker/cache/portfolio-cache.json`
+- TTL: 300 seconds (5 minutes)
 
 **Sourcing:**
 ```bash
 source scripts/portfolio/portfolio-status.sh
-data=$(collect_portfolio_status)
+portfolio_data=$(collect_portfolio_status)
+needs_attention=$(get_needs_attention "$portfolio_data")
 ```
 
-### portfolio-dashboard.sh
+### portfolio-briefing.sh
 
-Renders ASCII dashboard from portfolio status.
+Generates unified daily briefing covering all managed workspaces.
 
 **Usage:**
 ```bash
-# Display dashboard
-bash scripts/portfolio/portfolio-dashboard.sh
+# Generate briefing (default output)
+bash scripts/portfolio/portfolio-briefing.sh
 
-# Output to file
-bash scripts/portfolio/portfolio-dashboard.sh -o dashboard.md
+# Custom output path
+bash scripts/portfolio/portfolio-briefing.sh /path/to/output.md
 
-# Force refresh
-bash scripts/portfolio/portfolio-dashboard.sh --force
-
-# Disable colors
-bash scripts/portfolio/portfolio-dashboard.sh --no-color
+# Generate for specific date
+bash scripts/portfolio/portfolio-briefing.sh --date 2026-01-30
 ```
 
-**Dashboard sections:**
-1. **Needs Attention** - Projects with RED health or pending items (collapses if empty)
-2. **All Projects** - Full project list sorted by frecency
+**Briefing structure:**
+1. **Blockers** - Pending approvals and RED health across all projects (collapses if empty)
+2. **Executive Summary** - Projects with/without updates, attention needed
+3. **Per-Project Sections** - Details for projects with updates only
+
+**Output location:** `.worker/briefings/portfolio-latest.md`
+
+**History:** Previous briefings archived to `.worker/briefings/history/`
+
+**Sourcing:**
+```bash
+source scripts/portfolio/portfolio-briefing.sh
+generate_portfolio_briefing "/custom/path.md"
+```
 
 ## Dependencies
 
-- scripts/workspace/workspace-list.sh
-- scripts/workspace/workspace-health.sh
-- scripts/workspace/workspace-frecency.sh
-- jq (JSON processing)
+Portfolio scripts require:
+- `scripts/workspace/workspace-list.sh` - Workspace enumeration
+- `scripts/workspace/workspace-health.sh` - Health status checks
+- `scripts/workspace/workspace-frecency.sh` - Usage-based scoring
 
-## Cache
+## Architecture
 
-Portfolio status is cached in `.worker/cache/portfolio-cache.json` with 5-minute TTL.
-Use `--force` to bypass cache.
+**Portfolio Status Flow:**
+```
+workspace-list → workspace-health → workspace-frecency
+                        ↓
+                portfolio-status (cache)
+                        ↓
+                portfolio-briefing
+```
+
+**Caching Strategy:**
+- Portfolio status cached for 5 minutes
+- Cache invalidated by `--force` flag or age
+- Reduces load when multiple consumers query status
+
+**Staleness Detection:**
+- Workspaces with no activity >= 3 days promoted to YELLOW health
+- Activity determined from dispatch log or git commits
+- RED health always overrides staleness
+
+## Integration
+
+**CEO Dashboard:**
+Portfolio scripts integrate with CEO dashboard for unified workspace visibility.
+
+**Inbox Integration:**
+Briefings can be automatically delivered to inbox with project tagging for notification management.
