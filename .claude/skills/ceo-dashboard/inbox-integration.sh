@@ -314,10 +314,11 @@ format_blocked_status() {
 # -----------------------------------------------------------------------------
 
 # Deliver message to Inbox
-# Input: message (stdin), tier
+# Input: message (stdin), tier, project (optional)
 # Creates timestamped file in .worker/inbox/
 deliver_to_inbox() {
   local tier="${1:-silent}"
+  local project="${2:-}"
   local message
   message=$(cat)
 
@@ -342,7 +343,15 @@ deliver_to_inbox() {
   # Add delivery metadata
   local delivery_meta="---
 delivered: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-tier: $tier
+tier: $tier"
+
+  # Add project field if provided
+  if [ -n "$project" ]; then
+    delivery_meta="${delivery_meta}
+project: $project"
+  fi
+
+  delivery_meta="${delivery_meta}
 file: $filename
 ---
 
@@ -398,6 +407,130 @@ check_duplicate_delivery() {
   return 0
 }
 
+# Deliver message to Inbox with project tagging
+# Input: tier, project, message (stdin)
+# Wrapper for deliver_to_inbox with project parameter
+deliver_to_inbox_with_project() {
+  local tier="${1:-silent}"
+  local project="${2:-}"
+  local message
+  message=$(cat)
+
+  echo "$message" | deliver_to_inbox "$tier" "$project"
+}
+
+# Format inbox subject with project prefix
+# Input: project, subject
+# Output: subject with project tag if provided
+format_inbox_subject_with_project() {
+  local project="${1:-}"
+  local subject="${2:-}"
+
+  if [ -n "$project" ]; then
+    echo "[$project] $subject"
+  else
+    echo "$subject"
+  fi
+}
+
+# Show inbox summary grouped by project
+# Scans all inbox items and displays per-project counts
+show_inbox_summary() {
+  # Ensure inbox directory exists
+  if [ ! -d "$INBOX_DIR" ]; then
+    echo "## Inbox Summary"
+    echo ""
+    echo "No inbox items."
+    return 0
+  fi
+
+  # Find all .md files
+  local inbox_files
+  inbox_files=$(find "$INBOX_DIR" -maxdepth 1 -name "*.md" -type f 2>/dev/null)
+
+  if [ -z "$inbox_files" ]; then
+    echo "## Inbox Summary"
+    echo ""
+    echo "No inbox items."
+    return 0
+  fi
+
+  # Build project counts
+  local project_counts="{}"
+  local total_count=0
+
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+
+    # Extract project from frontmatter
+    local project
+    project=$(grep "^project:" "$file" 2>/dev/null | head -1 | sed 's/project: *//' | tr -d '\r')
+
+    # Use "(none)" if project is empty
+    if [ -z "$project" ]; then
+      project="(none)"
+    fi
+
+    # Increment count for this project
+    local current_count
+    current_count=$(echo "$project_counts" | jq -r --arg proj "$project" '.[$proj] // 0')
+    project_counts=$(echo "$project_counts" | jq --arg proj "$project" --argjson count "$((current_count + 1))" '.[$proj] = $count')
+
+    total_count=$((total_count + 1))
+  done <<< "$inbox_files"
+
+  # Display summary
+  echo "## Inbox Summary"
+  echo ""
+
+  # Sort by count descending and display
+  echo "$project_counts" | jq -r 'to_entries | sort_by(-.value) | .[] | "- \(.key): \(.value) item(s)"'
+
+  echo ""
+  echo "**Total:** $total_count item(s)"
+}
+
+# Filter inbox by project
+# Input: project_filter
+# Output: list of filepaths matching project
+filter_inbox_by_project() {
+  local project_filter="${1:-}"
+
+  if [ -z "$project_filter" ]; then
+    echo "Error: project filter required" >&2
+    return 1
+  fi
+
+  # Ensure inbox directory exists
+  if [ ! -d "$INBOX_DIR" ]; then
+    return 0
+  fi
+
+  # Find all .md files
+  local inbox_files
+  inbox_files=$(find "$INBOX_DIR" -maxdepth 1 -name "*.md" -type f 2>/dev/null)
+
+  if [ -z "$inbox_files" ]; then
+    return 0
+  fi
+
+  # Filter by project
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+
+    # Extract project from frontmatter
+    local project
+    project=$(grep "^project:" "$file" 2>/dev/null | head -1 | sed 's/project: *//' | tr -d '\r')
+
+    # Check if matches filter
+    if [ "$project" = "$project_filter" ]; then
+      echo "$file"
+    fi
+  done <<< "$inbox_files"
+
+  return 0
+}
+
 # -----------------------------------------------------------------------------
 # CLI Interface
 # -----------------------------------------------------------------------------
@@ -414,8 +547,8 @@ COMMANDS:
   tier <event_type>
       Get notification tier for event type
 
-  deliver <tier>
-      Deliver message from stdin to Inbox
+  deliver <tier> [project]
+      Deliver message from stdin to Inbox (optionally tagged with project)
 
   format-approval <id> <type> <agent> <context>
       Format an approval request
@@ -429,6 +562,12 @@ COMMANDS:
   should-deliver <tier> [ceo_mode]
       Check if message should be delivered now
 
+  summary
+      Show inbox summary grouped by project
+
+  filter <project>
+      List inbox items for a specific project
+
   help
       Show this help
 
@@ -436,9 +575,15 @@ EXAMPLES:
   # Get tier for an event
   ./inbox-integration.sh tier critical_violation
 
-  # Format and deliver approval request
+  # Format and deliver approval request with project tag
   ./inbox-integration.sh format-approval "id-123" "trust_promotion" "agent-1" "Requesting level 3" | \
-    ./inbox-integration.sh deliver delayed
+    ./inbox-integration.sh deliver delayed "MyProject"
+
+  # Show inbox summary by project
+  ./inbox-integration.sh summary
+
+  # Filter inbox by project
+  ./inbox-integration.sh filter "MyProject"
 
   # Check blocked agent status
   ./inbox-integration.sh format-blocked '["agent-1","agent-2"]'
@@ -452,7 +597,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
       get_notification_tier "$2"
       ;;
     deliver)
-      deliver_to_inbox "${2:-silent}"
+      deliver_to_inbox "${2:-silent}" "${3:-}"
       ;;
     format-approval)
       format_approval_request "$2" "$3" "$4" "$5"
@@ -466,11 +611,17 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     should-deliver)
       should_deliver_now "$2" "${3:-normal}"
       ;;
+    summary)
+      show_inbox_summary
+      ;;
+    filter)
+      filter_inbox_by_project "$2"
+      ;;
     help|--help|-h)
       _show_inbox_help
       ;;
     *)
-      echo "Usage: $0 {tier|deliver|format-approval|format-briefing|format-blocked|should-deliver|help}" >&2
+      echo "Usage: $0 {tier|deliver|format-approval|format-briefing|format-blocked|should-deliver|summary|filter|help}" >&2
       echo "Run '$0 help' for detailed usage information." >&2
       exit 1
       ;;
