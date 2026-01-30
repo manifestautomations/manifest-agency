@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 10 of 12 (Portfolio Visibility)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-30 — Completed 10-01-PLAN.md
+Last activity: 2026-01-30 — Completed 10-02-PLAN.md
 
-Progress: [###############.....] 67% (43 of 49 plans complete)
+Progress: [################....] 69% (44 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 7
-- Tasks completed: 14
-- Lines shipped: ~2,726
+- Plans completed: 8
+- Tasks completed: 16
+- Lines shipped: ~3,182
 
 ## Accumulated Context
 
@@ -87,6 +87,11 @@ Summary of major decisions from v1.0:
 - 3-day threshold for workspace staleness (promotes to YELLOW health)
 - Project field optional in inbox metadata (backward compatibility)
 
+**v1.1 decisions (10-02):**
+- ANSI color codes with plain text fallback (tput colors detection)
+- Collapsible Needs Attention section (omit when empty)
+- Frecency display mapping to human-readable activity levels (Active/Recent/Idle/New)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -102,5 +107,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 10-01-PLAN.md (portfolio status & project-tagged inbox)
-Resume file: None (continue with 10-02)
+Stopped at: Completed 10-02-PLAN.md (portfolio dashboard rendering)
+Resume file: None (continue with 10-03)
