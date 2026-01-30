@@ -21,10 +21,10 @@ Requirements for multi-workspace orchestration. Each maps to roadmap phases.
 
 ### Portfolio Visibility
 
-- [ ] **VIEW-01**: CEO can see status aggregated across all managed projects
-- [ ] **VIEW-02**: Dashboard shows health indicator (green/yellow/red) per project
-- [ ] **VIEW-03**: Daily briefing covers all projects in single document with sections
-- [ ] **VIEW-04**: Inbox aggregates notifications across projects with project tags
+- [x] **VIEW-01**: CEO can see status aggregated across all managed projects
+- [x] **VIEW-02**: Dashboard shows health indicator (green/yellow/red) per project
+- [x] **VIEW-03**: Daily briefing covers all projects in single document with sections
+- [x] **VIEW-04**: Inbox aggregates notifications across projects with project tags
 
 ### Trust & Approval
 
@@ -84,10 +84,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WKSP-04 | Phase 8 | Complete |
 | DISP-01 | Phase 9 | Complete |
 | DISP-02 | Phase 9 | Complete |
-| VIEW-01 | Phase 10 | Pending |
-| VIEW-02 | Phase 10 | Pending |
-| VIEW-03 | Phase 10 | Pending |
-| VIEW-04 | Phase 10 | Pending |
+| VIEW-01 | Phase 10 | Complete |
+| VIEW-02 | Phase 10 | Complete |
+| VIEW-03 | Phase 10 | Complete |
+| VIEW-04 | Phase 10 | Complete |
 | TRST-01 | Phase 11 | Pending |
 | TRST-02 | Phase 11 | Pending |
 | TRST-03 | Phase 11 | Pending |
@@ -100,4 +100,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after roadmap creation*
+*Last updated: 2026-01-30 after Phase 10 completion*
