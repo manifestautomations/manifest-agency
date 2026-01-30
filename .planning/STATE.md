@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 10 of 12 (Portfolio Visibility)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-30 — Completed 10-02-PLAN.md
+Last activity: 2026-01-30 — Completed 10-03-PLAN.md
 
-Progress: [################....] 69% (44 of 49 plans complete)
+Progress: [################....] 71% (45 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 8
-- Tasks completed: 16
-- Lines shipped: ~3,182
+- Plans completed: 9
+- Tasks completed: 18
+- Lines shipped: ~3,790
 
 ## Accumulated Context
 
@@ -92,6 +92,11 @@ Summary of major decisions from v1.0:
 - Collapsible Needs Attention section (omit when empty)
 - Frecency display mapping to human-readable activity levels (Active/Recent/Idle/New)
 
+**v1.1 decisions (10-03):**
+- Blockers section collapses when empty (clean briefing presentation)
+- 24-hour window for update detection (matches daily briefing cadence)
+- Project sections only for projects with updates (focus on active projects)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -107,5 +112,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 10-02-PLAN.md (portfolio dashboard rendering)
-Resume file: None (continue with 10-03)
+Stopped at: Completed 10-03-PLAN.md (portfolio briefing generation)
+Resume file: None (continue with 10-04)
