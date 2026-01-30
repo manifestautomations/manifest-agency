@@ -48,9 +48,11 @@ Plans:
   3. Dispatch fails gracefully if workspace not found or unhealthy
 **Plans**: 2 plans
 
+**Status**: Complete
+
 Plans:
-- [ ] 09-01-PLAN.md - Frecency tracking and fuzzy matching (Wave 1)
-- [ ] 09-02-PLAN.md - Dispatch routing with workspace targeting (Wave 2)
+- [x] 09-01-PLAN.md - Frecency tracking and fuzzy matching (Wave 1)
+- [x] 09-02-PLAN.md - Dispatch routing with workspace targeting (Wave 2)
 
 #### Phase 10: Portfolio Visibility
 **Goal**: CEO sees unified status across all managed projects in one view
@@ -106,7 +108,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 8. Workspace Foundation | v1.1 | 4/4 | Complete | 2026-01-29 |
-| 9. Cross-Workspace Dispatch | v1.1 | 0/2 | Not started | - |
+| 9. Cross-Workspace Dispatch | v1.1 | 2/2 | Complete | 2026-01-30 |
 | 10. Portfolio Visibility | v1.1 | 0/4 | Not started | - |
 | 11. Trust & Approval Gates | v1.1 | 0/2 | Not started | - |
 | 12. Anti-Gravity Integration | v1.1 | 0/2 | Not started | - |

@@ -16,8 +16,8 @@ Requirements for multi-workspace orchestration. Each maps to roadmap phases.
 
 ### Cross-Workspace Dispatch
 
-- [ ] **DISP-01**: CEO can dispatch work to specific project by name ("do X in Project Y")
-- [ ] **DISP-02**: System resolves workspace names/aliases to paths
+- [x] **DISP-01**: CEO can dispatch work to specific project by name ("do X in Project Y")
+- [x] **DISP-02**: System resolves workspace names/aliases to paths
 
 ### Portfolio Visibility
 
@@ -82,8 +82,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WKSP-02 | Phase 8 | Complete |
 | WKSP-03 | Phase 8 | Complete |
 | WKSP-04 | Phase 8 | Complete |
-| DISP-01 | Phase 9 | Pending |
-| DISP-02 | Phase 9 | Pending |
+| DISP-01 | Phase 9 | Complete |
+| DISP-02 | Phase 9 | Complete |
 | VIEW-01 | Phase 10 | Pending |
 | VIEW-02 | Phase 10 | Pending |
 | VIEW-03 | Phase 10 | Pending |
