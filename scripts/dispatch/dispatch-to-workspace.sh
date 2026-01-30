@@ -20,6 +20,7 @@ DISPATCH_LOG="$_DISPATCH_REPO_ROOT/.worker/dispatch/dispatch.jsonl"
 # Source dependencies (using unique variable names to avoid overwrites)
 # Note: Source fuzzy-match FIRST since other scripts may overwrite SCRIPT_DIR
 source "$_DISPATCH_SCRIPT_DIR/fuzzy-match.sh"
+source "$_DISPATCH_SCRIPT_DIR/trust-validation.sh"
 source "$_DISPATCH_REPO_ROOT/scripts/workspace/workspace-resolve.sh"
 source "$_DISPATCH_REPO_ROOT/scripts/workspace/workspace-health.sh"
 source "$_DISPATCH_REPO_ROOT/scripts/workspace/workspace-frecency.sh"
@@ -196,6 +197,17 @@ dispatch_to_workspace() {
     workspace_id=$(basename "$workspace_path")
 
     # ============================================================
+    # Step 1.5: Validate trust ceiling
+    # ============================================================
+    local parent_ceiling
+    parent_ceiling=$(_get_trust_ceiling)
+
+    if ! validate_trust_ceiling "$workspace_path" "$parent_ceiling"; then
+        echo "Dispatch blocked: Trust ceiling constraint violated." >&2
+        return 1
+    fi
+
+    # ============================================================
     # Step 2: Check workspace health
     # ============================================================
     check_workspace_health "$workspace_path"
@@ -242,10 +254,9 @@ dispatch_to_workspace() {
     esac
 
     # ============================================================
-    # Step 3: Get trust ceiling
+    # Step 3: Get trust ceiling (from validation)
     # ============================================================
-    local trust_ceiling
-    trust_ceiling=$(_get_trust_ceiling)
+    local trust_ceiling="$parent_ceiling"
 
     # ============================================================
     # Step 4: Log dispatch event
