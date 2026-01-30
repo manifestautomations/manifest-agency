@@ -11,8 +11,6 @@
 #   0 - Success, absolute path printed to stdout
 #   1 - Workspace not found, error and suggestions to stderr
 
-set -euo pipefail
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 GITMODULES_FILE="$REPO_ROOT/.gitmodules"
@@ -149,5 +147,6 @@ resolve_workspace() {
 
 # Execute if run directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -euo pipefail
     resolve_workspace "${1:-}"
 fi

@@ -11,8 +11,6 @@
 #   0 - All required structure present
 #   1 - Required structure missing or path doesn't exist
 
-set -euo pipefail
-
 # Handle case where BASH_SOURCE may be unset (bash script.sh invocation on some platforms)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
@@ -119,5 +117,7 @@ validate_workspace_structure() {
 }
 
 # Execute if run directly (not sourced)
-# Using return in subshell - succeeds when sourced, fails when executed
-(return 0 2>/dev/null) || validate_workspace_structure "${1:-}"
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
+    set -euo pipefail
+    validate_workspace_structure "${1:-}"
+fi

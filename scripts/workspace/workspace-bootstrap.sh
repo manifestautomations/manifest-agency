@@ -14,8 +14,6 @@
 #   0 - Workspace bootstrapped successfully
 #   1 - Error during bootstrap
 
-set -euo pipefail
-
 # Handle case where BASH_SOURCE may be unset
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -328,5 +326,6 @@ Trust ceiling: Level $trust_ceiling
 # Execute if run directly (not sourced)
 # Use BASH_SOURCE vs $0 comparison for source detection
 if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
+    set -euo pipefail
     bootstrap_workspace "$@"
 fi

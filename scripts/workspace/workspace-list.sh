@@ -6,8 +6,6 @@
 # Uses git config (plumbing command) for stable API
 # See: https://git-scm.com/docs/git-submodule
 
-set -euo pipefail
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 GITMODULES_FILE="$REPO_ROOT/.gitmodules"
@@ -97,5 +95,6 @@ list_workspaces() {
 
 # Execute if run directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -euo pipefail
     list_workspaces "$PORCELAIN"
 fi

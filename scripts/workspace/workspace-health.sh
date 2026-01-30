@@ -14,8 +14,6 @@
 #   0 - All checked workspaces are GREEN or YELLOW
 #   1 - At least one workspace is RED
 
-set -euo pipefail
-
 # Handle BASH_SOURCE being unset on some platforms
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -272,4 +270,7 @@ _workspace_health_main() {
 }
 
 # Execute if run directly (not sourced)
-(return 0 2>/dev/null) || _workspace_health_main "$@"
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
+    set -euo pipefail
+    _workspace_health_main "$@"
+fi
