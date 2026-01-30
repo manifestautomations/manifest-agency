@@ -63,13 +63,12 @@ Plans:
   2. Each project shows health indicator (green/yellow/red) at a glance
   3. Daily briefing covers all projects with per-project sections
   4. Inbox notifications are tagged with originating project
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 10-01: Status aggregation across workspaces
-- [ ] 10-02: Health indicators and dashboard view
-- [ ] 10-03: Multi-project briefing generation
-- [ ] 10-04: Inbox aggregation with project tags
+- [ ] 10-01-PLAN.md - Portfolio status aggregation and inbox project tagging (Wave 1)
+- [ ] 10-02-PLAN.md - Portfolio dashboard with health indicators (Wave 2)
+- [ ] 10-03-PLAN.md - Multi-project briefing generation (Wave 2)
 
 #### Phase 11: Trust & Approval Gates
 **Goal**: Cross-workspace operations are properly constrained and approved
@@ -109,7 +108,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 |-------|-----------|----------------|--------|-----------|
 | 8. Workspace Foundation | v1.1 | 4/4 | Complete | 2026-01-29 |
 | 9. Cross-Workspace Dispatch | v1.1 | 2/2 | Complete | 2026-01-30 |
-| 10. Portfolio Visibility | v1.1 | 0/4 | Not started | - |
+| 10. Portfolio Visibility | v1.1 | 0/3 | Planned | - |
 | 11. Trust & Approval Gates | v1.1 | 0/2 | Not started | - |
 | 12. Anti-Gravity Integration | v1.1 | 0/2 | Not started | - |
 
