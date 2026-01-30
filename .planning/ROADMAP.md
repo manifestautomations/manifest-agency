@@ -79,11 +79,12 @@ Plans:
   1. Child workspace trust cannot exceed parent agency ceiling
   2. Each workspace trust ledger operates independently (verified across dispatch)
   3. Cross-workspace operations prompt for explicit CEO approval
-**Plans**: TBD
+**Plans**: 2 plans
+**Status**: Ready for execution
 
 Plans:
-- [ ] 11-01: Trust ceiling inheritance enforcement
-- [ ] 11-02: Cross-workspace approval workflow
+- [ ] 11-01-PLAN.md - Trust ceiling enforcement with ledger parsing and validation (Wave 1)
+- [ ] 11-02-PLAN.md - Cross-workspace approval workflow with exit-and-resume pattern (Wave 2)
 
 #### Phase 12: Anti-Gravity Integration
 **Goal**: System operates through Anti-Gravity Agent Manager as primary CEO interface
