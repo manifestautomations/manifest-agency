@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 9 of 12 (Cross-Workspace Dispatch)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-30 — Completed 09-01-PLAN.md (frecency and fuzzy matching)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-30 — Completed 09-02-PLAN.md (dispatch routing)
 
-Progress: [#############.......] 62% (41 of 49 plans complete)
+Progress: [##############......] 64% (42 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 5
-- Tasks completed: 10
-- Lines shipped: ~1,726
+- Plans completed: 6
+- Tasks completed: 12
+- Lines shipped: ~2,207
 
 ## Accumulated Context
 
@@ -76,6 +76,12 @@ Summary of major decisions from v1.0:
 - JSONL format for frecency events (append-only, line-by-line parsing)
 - Case-insensitive matching for fuzzy suggestions
 
+**v1.1 decisions (09-02):**
+- Source order matters: fuzzy-match.sh sourced first to avoid SCRIPT_DIR overwrite
+- Non-interactive mode fails on RED health (cannot prompt for confirmation)
+- Trust ceiling from .worker/config.json guardrails.default_trust_level, default 2
+- Event ID format: workspace-dispatch-{epoch_ns}-{pid} for uniqueness
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -91,5 +97,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 09-01-PLAN.md (frecency and fuzzy matching)
-Resume file: None (continue with 09-02-PLAN.md)
+Stopped at: Completed 09-02-PLAN.md (dispatch routing) - Phase 9 complete
+Resume file: None (continue with Phase 10)
