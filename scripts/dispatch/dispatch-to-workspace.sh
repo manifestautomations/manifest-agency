@@ -21,6 +21,7 @@ DISPATCH_LOG="$_DISPATCH_REPO_ROOT/.worker/dispatch/dispatch.jsonl"
 # Note: Source fuzzy-match FIRST since other scripts may overwrite SCRIPT_DIR
 source "$_DISPATCH_SCRIPT_DIR/fuzzy-match.sh"
 source "$_DISPATCH_SCRIPT_DIR/trust-validation.sh"
+source "$_DISPATCH_SCRIPT_DIR/approval-gate.sh"
 source "$_DISPATCH_REPO_ROOT/scripts/workspace/workspace-resolve.sh"
 source "$_DISPATCH_REPO_ROOT/scripts/workspace/workspace-health.sh"
 source "$_DISPATCH_REPO_ROOT/scripts/workspace/workspace-frecency.sh"
@@ -70,7 +71,8 @@ _generate_dispatch_id() {
 
 # Log dispatch event to JSONL
 # Args: $1=dispatch_id, $2=workspace_id, $3=workspace_path, $4=parent_agent,
-#       $5=trust_ceiling, $6=task_description, $7=health_status
+#       $5=trust_ceiling, $6=task_description, $7=health_status,
+#       $8=child_trust_level, $9=approval_status, $10=approval_id
 _log_dispatch_event() {
     local dispatch_id="$1"
     local workspace_id="$2"
@@ -79,6 +81,9 @@ _log_dispatch_event() {
     local trust_ceiling="$5"
     local task_description="$6"
     local health_status="$7"
+    local child_trust_level="${8:-0}"
+    local approval_status="${9:-not_required}"
+    local approval_id="${10:-}"
 
     local timestamp
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -90,8 +95,8 @@ _log_dispatch_event() {
     escaped_task="${escaped_task:1:-1}"
 
     # Append JSONL event
-    printf '{"timestamp":"%s","event_type":"workspace_dispatch","event_id":"%s","data":{"workspace_id":"%s","workspace_path":"%s","parent_agent":"%s","trust_ceiling":%d,"task_description":"%s","health_status":"%s"}}\n' \
-        "$timestamp" "$dispatch_id" "$workspace_id" "$workspace_path" "$parent_agent" "$trust_ceiling" "$escaped_task" "$health_status" >> "$DISPATCH_LOG"
+    printf '{"timestamp":"%s","event_type":"workspace_dispatch","event_id":"%s","data":{"workspace_id":"%s","workspace_path":"%s","parent_agent":"%s","trust_ceiling":%d,"child_trust_level":%d,"task_description":"%s","health_status":"%s","approval_status":"%s","approval_id":"%s"}}\n' \
+        "$timestamp" "$dispatch_id" "$workspace_id" "$workspace_path" "$parent_agent" "$trust_ceiling" "$child_trust_level" "$escaped_task" "$health_status" "$approval_status" "$approval_id" >> "$DISPATCH_LOG"
 }
 
 # Intelligent target workspace selection
@@ -208,6 +213,48 @@ dispatch_to_workspace() {
     fi
 
     # ============================================================
+    # Step 1.6: Check approval requirement (trust level 3+)
+    # ============================================================
+    # Get child's trust level for approval check
+    local child_ledger="$workspace_path/.planning/trust-ledger.md"
+    local child_level
+    if [[ -f "$child_ledger" ]]; then
+        child_level=$(get_current_trust_level "$child_ledger")
+    else
+        child_level=0
+    fi
+
+    # Check if approval is required and granted
+    local current_approval_id=""
+    if ! check_approval_requirement "$workspace_id" "$task_description" "$child_level"; then
+        # Approval required but not yet granted - exit and await approval
+        return 1
+    fi
+
+    # Determine approval status for logging
+    local approval_status="not_required"
+    if [[ "$child_level" -ge 3 ]]; then
+        # Trust level 3+, so approval was required
+        # If we got here, it was already approved (check_approval_requirement returned 0)
+        approval_status="approved"
+
+        # Try to find the approval_id from approved directory
+        local approved_dir="$_DISPATCH_REPO_ROOT/.worker/approvals/approved"
+        if [[ -d "$approved_dir" ]]; then
+            for approval_file in "$approved_dir"/*.json; do
+                [[ -e "$approval_file" ]] || continue
+                local approval_type workspace_match
+                approval_type=$(jq -r '.type' "$approval_file" 2>/dev/null || echo "")
+                workspace_match=$(jq -r '.context.workspace' "$approval_file" 2>/dev/null || echo "")
+                if [[ "$approval_type" == "cross_workspace" ]] && [[ "$workspace_match" == "$workspace_id" ]]; then
+                    current_approval_id=$(jq -r '.approval_id' "$approval_file" 2>/dev/null || echo "")
+                    break
+                fi
+            done
+        fi
+    fi
+
+    # ============================================================
     # Step 2: Check workspace health
     # ============================================================
     check_workspace_health "$workspace_path"
@@ -265,7 +312,8 @@ dispatch_to_workspace() {
     dispatch_id=$(_generate_dispatch_id)
 
     _log_dispatch_event "$dispatch_id" "$workspace_id" "$workspace_path" \
-        "$parent_agent" "$trust_ceiling" "$task_description" "$health_status"
+        "$parent_agent" "$trust_ceiling" "$task_description" "$health_status" \
+        "$child_level" "$approval_status" "${current_approval_id:-}"
 
     # ============================================================
     # Step 5: Record frecency access
