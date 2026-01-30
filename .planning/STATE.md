@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 11 of 12 (Trust & Approval Gates)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-30 — Completed 11-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-30 — Completed 11-02-PLAN.md
 
-Progress: [################....] 71% (46 of 49 plans complete)
+Progress: [################....] 73% (47 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 10
-- Tasks completed: 20
-- Lines shipped: ~4,100
+- Plans completed: 11
+- Tasks completed: 23
+- Lines shipped: ~4,320
 
 ## Accumulated Context
 
@@ -102,6 +102,11 @@ Summary of major decisions from v1.0:
 - Fail dispatch before health check on ceiling violation (fast failure)
 - Auto-create GitHub issues for ceiling violations (best effort, non-blocking)
 
+**v1.1 decisions (11-02):**
+- Exit-and-resume pattern for approvals (dispatch exits, user re-runs after approval)
+- File-based approval lookup (scan approved/*.json for matching workspace)
+- Trust ceiling validation before approval check (fast failure on config errors)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -117,5 +122,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 11-01-PLAN.md (Trust Ceiling Enforcement)
-Resume file: None (continue with 11-02)
+Stopped at: Completed 11-02-PLAN.md (Cross-Workspace Approval Workflow) - Phase 11 complete
+Resume file: None (continue with Phase 12)
