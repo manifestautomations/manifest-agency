@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 11 of 12 (Trust & Approval Gates)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-01-30 — Completed Phase 10 (Portfolio Visibility)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-30 — Completed 11-01-PLAN.md
 
-Progress: [################....] 69% (45 of 49 plans complete)
+Progress: [################....] 71% (46 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 9
-- Tasks completed: 18
-- Lines shipped: ~3,790
+- Plans completed: 10
+- Tasks completed: 20
+- Lines shipped: ~4,100
 
 ## Accumulated Context
 
@@ -97,6 +97,11 @@ Summary of major decisions from v1.0:
 - 24-hour window for update detection (matches daily briefing cadence)
 - Project sections only for projects with updates (focus on active projects)
 
+**v1.1 decisions (11-01):**
+- Parse trust ledger tables using grep/awk pipeline (no external dependencies)
+- Fail dispatch before health check on ceiling violation (fast failure)
+- Auto-create GitHub issues for ceiling violations (best effort, non-blocking)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -112,5 +117,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed Phase 10 (Portfolio Visibility) - All 3 plans executed, verified
-Resume file: None (continue with Phase 11)
+Stopped at: Completed 11-01-PLAN.md (Trust Ceiling Enforcement)
+Resume file: None (continue with 11-02)
