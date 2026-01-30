@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 10 of 12 (Portfolio Visibility)
-Plan: 0 of 4 in current phase
-Status: Ready to plan
-Last activity: 2026-01-30 — Completed Phase 9 (Cross-Workspace Dispatch)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-30 — Completed 10-01-PLAN.md
 
-Progress: [##############......] 64% (42 of 49 plans complete)
+Progress: [###############.....] 67% (43 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 6
-- Tasks completed: 12
-- Lines shipped: ~2,207
+- Plans completed: 7
+- Tasks completed: 14
+- Lines shipped: ~2,726
 
 ## Accumulated Context
 
@@ -82,6 +82,11 @@ Summary of major decisions from v1.0:
 - Trust ceiling from .worker/config.json guardrails.default_trust_level, default 2
 - Event ID format: workspace-dispatch-{epoch_ns}-{pid} for uniqueness
 
+**v1.1 decisions (10-01):**
+- 5-minute cache for portfolio status (balances freshness with performance)
+- 3-day threshold for workspace staleness (promotes to YELLOW health)
+- Project field optional in inbox metadata (backward compatibility)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -97,5 +102,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-30
-Stopped at: Completed 09-02-PLAN.md (dispatch routing) - Phase 9 complete
-Resume file: None (continue with Phase 10)
+Stopped at: Completed 10-01-PLAN.md (portfolio status & project-tagged inbox)
+Resume file: None (continue with 10-02)
