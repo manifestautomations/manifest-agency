@@ -53,6 +53,46 @@ portfolio_data=$(collect_portfolio_status)
 needs_attention=$(get_needs_attention "$portfolio_data")
 ```
 
+### portfolio-dashboard.sh
+
+Renders ASCII dashboard from portfolio status data with health indicators.
+
+**Usage:**
+```bash
+# Display dashboard to terminal
+bash scripts/portfolio/portfolio-dashboard.sh
+
+# Output to file
+bash scripts/portfolio/portfolio-dashboard.sh -o dashboard.md
+
+# Force refresh (skip cache)
+bash scripts/portfolio/portfolio-dashboard.sh --force
+
+# Disable ANSI colors
+bash scripts/portfolio/portfolio-dashboard.sh --no-color
+```
+
+**Dashboard sections:**
+1. **Needs Attention** - Projects with RED health or pending items (collapses if empty)
+2. **All Projects** - Full project list sorted by frecency (most active first)
+
+**Health indicators:**
+- `[OK]` - GREEN health (healthy, recent activity)
+- `[!!]` - YELLOW health (stale or warnings)
+- `[XX]` - RED health (blocking issues)
+
+**Activity levels** (based on frecency):
+- **Active** - frecency > 50
+- **Recent** - frecency > 10
+- **Idle** - frecency > 0
+- **New** - frecency = 0
+
+**Sourcing:**
+```bash
+source scripts/portfolio/portfolio-dashboard.sh
+render_portfolio_dashboard
+```
+
 ### portfolio-briefing.sh
 
 Generates unified daily briefing covering all managed workspaces.
