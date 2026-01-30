@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 Phase: 9 of 12 (Cross-Workspace Dispatch)
 Plan: 0 of 2 in current phase
 Status: Ready to plan
-Last activity: 2026-01-29 — Completed Phase 8 (Workspace Foundation)
+Last activity: 2026-01-29 — Completed Phase 8 gap closure (08-04-PLAN.md)
 
-Progress: [###########.........] 56% (39 of 49 plans complete)
+Progress: [###########.........] 58% (40 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,8 +33,8 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 3
-- Tasks completed: 6
+- Plans completed: 4
+- Tasks completed: 8
 - Lines shipped: ~1,300
 
 ## Accumulated Context
@@ -66,6 +66,10 @@ Summary of major decisions from v1.0:
 - Function export pattern for bash scripts (source then call)
 - Scaffold mode for adding structure to existing directories
 
+**v1.1 decisions (08-04):**
+- set -euo pipefail placement: inside direct-execution block prevents parent shell propagation
+- Standardized if [[ ${BASH_SOURCE[0]} == $0 ]] pattern (not (return 0) || pattern)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -81,5 +85,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed Phase 8 verification
-Resume file: None (run `/gsd:plan-phase 9` or `/gsd:discuss-phase 9`)
+Stopped at: Completed 08-04-PLAN.md (gap closure)
+Resume file: None (Phase 8 complete - run `/gsd:plan-phase 9` or `/gsd:discuss-phase 9`)
