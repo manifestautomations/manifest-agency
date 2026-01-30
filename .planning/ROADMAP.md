@@ -30,13 +30,13 @@ See `.planning/MILESTONES.md` for v1.0 details.
   3. Each workspace maintains its own trust ledger (scores isolated between projects)
   4. Invalid workspace registration fails with clear error message
 **Plans**: 4 plans (3 original + 1 gap closure)
-**Status**: Gap closure in progress
+**Status**: Complete
 
 Plans:
 - [x] 08-01-PLAN.md - Workspace discovery and name resolution (Wave 1)
 - [x] 08-02-PLAN.md - Workspace health and validation (Wave 2)
 - [x] 08-03-PLAN.md - Workspace bootstrap with trust isolation (Wave 3)
-- [ ] 08-04-PLAN.md - Fix bash crash when scripts sourced (Gap closure)
+- [x] 08-04-PLAN.md - Fix bash crash when scripts sourced (Gap closure)
 
 #### Phase 9: Cross-Workspace Dispatch
 **Goal**: CEO can dispatch work to any registered workspace by name
@@ -105,7 +105,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 8. Workspace Foundation | v1.1 | 3/4 | Gap closure | - |
+| 8. Workspace Foundation | v1.1 | 4/4 | Complete | 2026-01-29 |
 | 9. Cross-Workspace Dispatch | v1.1 | 0/2 | Not started | - |
 | 10. Portfolio Visibility | v1.1 | 0/4 | Not started | - |
 | 11. Trust & Approval Gates | v1.1 | 0/2 | Not started | - |
