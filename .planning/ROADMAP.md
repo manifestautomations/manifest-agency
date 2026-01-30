@@ -46,11 +46,11 @@ Plans:
   1. CEO can say "do X in Project Y" and work routes to correct workspace
   2. Workspace name/alias resolves to correct filesystem path
   3. Dispatch fails gracefully if workspace not found or unhealthy
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: Workspace name resolution and path mapping
-- [ ] 09-02: Dispatch routing with workspace targeting
+- [ ] 09-01-PLAN.md - Frecency tracking and fuzzy matching (Wave 1)
+- [ ] 09-02-PLAN.md - Dispatch routing with workspace targeting (Wave 2)
 
 #### Phase 10: Portfolio Visibility
 **Goal**: CEO sees unified status across all managed projects in one view
