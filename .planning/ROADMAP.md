@@ -80,11 +80,11 @@ Plans:
   2. Each workspace trust ledger operates independently (verified across dispatch)
   3. Cross-workspace operations prompt for explicit CEO approval
 **Plans**: 2 plans
-**Status**: Ready for execution
+**Status**: Complete
 
 Plans:
-- [ ] 11-01-PLAN.md - Trust ceiling enforcement with ledger parsing and validation (Wave 1)
-- [ ] 11-02-PLAN.md - Cross-workspace approval workflow with exit-and-resume pattern (Wave 2)
+- [x] 11-01-PLAN.md - Trust ceiling enforcement with ledger parsing and validation (Wave 1)
+- [x] 11-02-PLAN.md - Cross-workspace approval workflow with exit-and-resume pattern (Wave 2)
 
 #### Phase 12: Anti-Gravity Integration
 **Goal**: System operates through Anti-Gravity Agent Manager as primary CEO interface
@@ -111,7 +111,7 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 | 8. Workspace Foundation | v1.1 | 4/4 | Complete | 2026-01-29 |
 | 9. Cross-Workspace Dispatch | v1.1 | 2/2 | Complete | 2026-01-30 |
 | 10. Portfolio Visibility | v1.1 | 3/3 | Complete | 2026-01-30 |
-| 11. Trust & Approval Gates | v1.1 | 0/2 | Not started | - |
+| 11. Trust & Approval Gates | v1.1 | 2/2 | Complete | 2026-01-30 |
 | 12. Anti-Gravity Integration | v1.1 | 0/2 | Not started | - |
 
 **Coverage:** 14/14 requirements mapped

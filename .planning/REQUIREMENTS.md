@@ -28,9 +28,9 @@ Requirements for multi-workspace orchestration. Each maps to roadmap phases.
 
 ### Trust & Approval
 
-- [ ] **TRST-01**: Child workspace trust is constrained by parent ceiling
-- [ ] **TRST-02**: Each workspace maintains separate trust ledger
-- [ ] **TRST-03**: Cross-workspace operations require explicit approval
+- [x] **TRST-01**: Child workspace trust is constrained by parent ceiling
+- [x] **TRST-02**: Each workspace maintains separate trust ledger
+- [x] **TRST-03**: Cross-workspace operations require explicit approval
 
 ### Integration
 
@@ -88,9 +88,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIEW-02 | Phase 10 | Complete |
 | VIEW-03 | Phase 10 | Complete |
 | VIEW-04 | Phase 10 | Complete |
-| TRST-01 | Phase 11 | Pending |
-| TRST-02 | Phase 11 | Pending |
-| TRST-03 | Phase 11 | Pending |
+| TRST-01 | Phase 11 | Complete |
+| TRST-02 | Phase 11 | Complete |
+| TRST-03 | Phase 11 | Complete |
 | INTG-01 | Phase 12 | Pending |
 
 **Coverage:**
@@ -100,4 +100,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-30 after Phase 10 completion*
+*Last updated: 2026-01-30 after Phase 11 completion*
