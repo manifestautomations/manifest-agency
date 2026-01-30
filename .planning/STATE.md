@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 9 of 12 (Cross-Workspace Dispatch)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-01-29 — Completed Phase 8 gap closure (08-04-PLAN.md)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-30 — Completed 09-01-PLAN.md (frecency and fuzzy matching)
 
-Progress: [############........] 60% (40 of 49 plans complete)
+Progress: [#############.......] 62% (41 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 4
-- Tasks completed: 8
-- Lines shipped: ~1,300
+- Plans completed: 5
+- Tasks completed: 10
+- Lines shipped: ~1,726
 
 ## Accumulated Context
 
@@ -70,6 +70,12 @@ Summary of major decisions from v1.0:
 - set -euo pipefail placement: inside direct-execution block prevents parent shell propagation
 - Standardized if [[ ${BASH_SOURCE[0]} == $0 ]] pattern (not (return 0) || pattern)
 
+**v1.1 decisions (09-01):**
+- Time-decay frecency weights: <5d=100, 5-14d=70, 15-31d=50, 32-89d=30, 90+d=10
+- Fuzzy threshold of 3 edit distance for workspace suggestions
+- JSONL format for frecency events (append-only, line-by-line parsing)
+- Case-insensitive matching for fuzzy suggestions
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -84,6 +90,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-29
-Stopped at: Completed 08-04-PLAN.md (gap closure)
-Resume file: None (Phase 8 complete - run `/gsd:plan-phase 9` or `/gsd:discuss-phase 9`)
+Last session: 2026-01-30
+Stopped at: Completed 09-01-PLAN.md (frecency and fuzzy matching)
+Resume file: None (continue with 09-02-PLAN.md)
