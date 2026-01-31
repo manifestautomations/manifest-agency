@@ -34,7 +34,7 @@ Requirements for multi-workspace orchestration. Each maps to roadmap phases.
 
 ### Integration
 
-- [ ] **INTG-01**: System works through Anti-Gravity Agent Manager as primary interface
+- [x] **INTG-01**: System works through Anti-Gravity Agent Manager as primary interface
 
 ## v2 Requirements
 
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRST-01 | Phase 11 | Complete |
 | TRST-02 | Phase 11 | Complete |
 | TRST-03 | Phase 11 | Complete |
-| INTG-01 | Phase 12 | Pending |
+| INTG-01 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 14 total
