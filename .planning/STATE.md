@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 12 of 12 (Anti-Gravity Integration)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-01-30 — Completed Phase 11 (Trust & Approval Gates)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-31 — Completed 12-01-PLAN.md (Hybrid Architecture)
 
-Progress: [#################...] 73% (47 of 49 plans complete)
+Progress: [#################...] 75% (48 of 49 plans complete)
 
 ## Milestone History
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 11
-- Tasks completed: 23
-- Lines shipped: ~4,320
+- Plans completed: 12
+- Tasks completed: 26
+- Lines shipped: ~5,112
 
 ## Accumulated Context
 
@@ -107,6 +107,11 @@ Summary of major decisions from v1.0:
 - File-based approval lookup (scan approved/*.json for matching workspace)
 - Trust ceiling validation before approval check (fast failure on config errors)
 
+**v1.1 decisions (12-01):**
+- Hybrid architecture: agents.md for core context + skills for explicit commands (Vercel research: 56% skill non-invocation)
+- Retrieval reasoning pattern: Script index in agents.md, fetch details via cat when needed (80% size reduction)
+- Inbox checking behavior: Proactive on conversation start, on request only (no polling between turns)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -121,6 +126,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-30
-Stopped at: Completed Phase 11 (Trust & Approval Gates) - All 2 plans executed, verified
-Resume file: None (continue with Phase 12)
+Last session: 2026-01-31
+Stopped at: Completed 12-01-PLAN.md (Hybrid Architecture for Gemini Integration)
+Resume file: None (continue with 12-02)
