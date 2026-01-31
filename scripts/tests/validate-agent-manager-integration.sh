@@ -31,13 +31,13 @@ test_result() {
 
     if [[ "$result" == "pass" ]]; then
         echo "${GREEN}[PASS]${RESET} $name"
-        ((PASS++))
+        PASS=$((PASS + 1))
     else
         echo "${RED}[FAIL]${RESET} $name"
         if [[ -n "$details" ]]; then
             echo "       ${YELLOW}→${RESET} $details"
         fi
-        ((FAIL++))
+        FAIL=$((FAIL + 1))
     fi
 }
 
@@ -86,7 +86,7 @@ if [[ -f "$REPO_ROOT/.gemini/agents.md" ]]; then
     invalid_scripts=()
 
     # Extract script paths from the Script Index section
-    # Look for patterns like: scripts/orchestrator/dispatch.sh, scripts/portfolio/status.sh
+    # Look for patterns like: scripts/orchestrator/dispatch.sh, .claude/skills/ceo-dashboard/scripts/approval-workflow.sh
     while IFS= read -r script_path; do
         if [[ -n "$script_path" ]]; then
             full_path="$REPO_ROOT/$script_path"
@@ -94,7 +94,7 @@ if [[ -f "$REPO_ROOT/.gemini/agents.md" ]]; then
                 invalid_scripts+=("$script_path")
             fi
         fi
-    done < <(grep -oP 'scripts/[a-z/-]+\.sh' "$REPO_ROOT/.gemini/agents.md" 2>/dev/null || true)
+    done < <(grep -oP '(scripts/|\.claude/)[a-z/-]+\.sh' "$REPO_ROOT/.gemini/agents.md" 2>/dev/null || true)
 
     if [[ ${#invalid_scripts[@]} -eq 0 ]]; then
         test_result "Script paths valid" "pass"
@@ -150,7 +150,7 @@ for skill in "${skills[@]}"; do
     if [[ -f "$skill_file" ]]; then
         invalid_refs=()
 
-        # Extract script paths from skill file
+        # Extract script paths from skill file (both scripts/ and .claude/ paths)
         while IFS= read -r script_path; do
             if [[ -n "$script_path" ]]; then
                 full_path="$REPO_ROOT/$script_path"
@@ -158,7 +158,7 @@ for skill in "${skills[@]}"; do
                     invalid_refs+=("$script_path")
                 fi
             fi
-        done < <(grep -oP 'scripts/[a-z/-]+\.sh' "$skill_file" 2>/dev/null || true)
+        done < <(grep -oP '(scripts/|\.claude/)[a-z/-]+\.sh' "$skill_file" 2>/dev/null | sort -u || true)
 
         if [[ ${#invalid_refs[@]} -eq 0 ]]; then
             test_result "Script refs in $skill are valid" "pass"
@@ -330,7 +330,7 @@ if [[ -f "$REPO_ROOT/scripts/dispatch/approval-gate.sh" ]]; then
     fi
 
     # Check for exported functions
-    if grep -qE "^(check_approval|require_approval)\(\)" "$REPO_ROOT/scripts/dispatch/approval-gate.sh"; then
+    if grep -qE "^(check_existing_approval|check_approval_requirement)\(\)" "$REPO_ROOT/scripts/dispatch/approval-gate.sh"; then
         test_result "approval-gate.sh has required functions" "pass"
     else
         test_result "approval-gate.sh has required functions" "fail" "Functions not found"
