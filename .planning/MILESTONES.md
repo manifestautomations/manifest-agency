@@ -1,5 +1,33 @@
 # Project Milestones: Manifest Automations
 
+## v1.1 Multi-Workspace Orchestration (Shipped: 2026-01-31)
+
+**Delivered:** Multi-workspace orchestration through Anti-Gravity Agent Manager — CEO can manage 2-3 repos with unified visibility, cross-workspace dispatch, and trust-gated approval workflows.
+
+**Phases completed:** 8-12 (13 plans total)
+
+**Key accomplishments:**
+
+- Workspace registry with git submodule discovery, health checks, and single-command bootstrap
+- Cross-workspace dispatch with frecency-based defaults and fuzzy name suggestions
+- Portfolio dashboard with health indicators and collapsible "Needs Attention" section
+- Multi-project daily briefing with per-workspace sections
+- Trust ceiling enforcement with exit-and-resume approval workflow for level 3+ operations
+- Anti-Gravity Agent Manager integration via hybrid agents.md + skills architecture
+
+**Stats:**
+
+- 62 files created/modified
+- ~13,189 lines added
+- 5 phases, 13 plans, 28 tasks
+- 3 days from start to ship (2026-01-29 → 2026-01-31)
+
+**Git range:** `0c0f7b7` → `31d8d4e`
+
+**What's next:** v1.2 or v2.0 — consider advanced dispatch (DISP-03/04/05), production infrastructure (PROD-01/02/03), or portfolio analytics (ANLYT-01/02/03)
+
+---
+
 ## v1.0 MVP (Shipped: 2026-01-29)
 
 **Delivered:** Complete AI development agency loop where CEO dispatches intent, Gemini orchestrator routes work, Claude workers execute via GSD, and results land in GitHub with status reporting to Mission Control inbox.
