@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 12 of 12 (Anti-Gravity Integration)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-31 — Completed 12-01-PLAN.md (Hybrid Architecture)
+Plan: 2 of 2 in current phase (PHASE COMPLETE)
+Status: v1.1 milestone complete
+Last activity: 2026-01-31 — Completed 12-02-PLAN.md (Integration Validation)
 
-Progress: [#################...] 75% (48 of 49 plans complete)
+Progress: [####################] 100% (49 of 49 plans complete)
 
 ## Milestone History
 
 | Version | Name | Phases | Plans | Shipped |
 |---------|------|--------|-------|---------|
 | v1.0 | MVP | 1-7 | 36 | 2026-01-29 |
-| v1.1 | Multi-Workspace | 8-12 | 13 (planned) | In progress |
+| v1.1 | Multi-Workspace | 8-12 | 13 | 2026-01-31 |
 
 See `.planning/MILESTONES.md` for full details.
 
@@ -33,9 +33,9 @@ See `.planning/MILESTONES.md` for full details.
 - ~41,725 lines shipped
 
 **v1.1:**
-- Plans completed: 12
-- Tasks completed: 26
-- Lines shipped: ~5,112
+- Plans completed: 13
+- Tasks completed: 28
+- Lines shipped: ~5,668
 
 ## Accumulated Context
 
@@ -112,6 +112,11 @@ Summary of major decisions from v1.0:
 - Retrieval reasoning pattern: Script index in agents.md, fetch details via cat when needed (80% size reduction)
 - Inbox checking behavior: Proactive on conversation start, on request only (no polling between turns)
 
+**v1.1 decisions (12-02):**
+- Validation strategy: Automated tests for wiring, manual tests for UX (automated validates integration points, manual validates real-world Gemini UX)
+- Test coverage: 34 tests across 5 categories (comprehensive without being exhaustive, ~10 second execution)
+- Checkpoint approval requirement: Blocking checkpoint for CEO manual verification (ensures actual Agent Manager UX works)
+
 ### Research Context
 
 Research completed (see .planning/research/SUMMARY.md):
@@ -127,5 +132,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-31
-Stopped at: Completed 12-01-PLAN.md (Hybrid Architecture for Gemini Integration)
-Resume file: None (continue with 12-02)
+Stopped at: Completed 12-02-PLAN.md (Agent Manager Integration Validation)
+Resume file: None (v1.1 milestone complete - all 49 plans shipped)
