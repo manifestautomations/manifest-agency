@@ -97,8 +97,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01-PLAN.md - Hybrid agents.md + skills architecture (Wave 1)
-- [ ] 12-02-PLAN.md - End-to-end integration validation (Wave 2)
+- [x] 12-01-PLAN.md - Hybrid agents.md + skills architecture (Wave 1)
+- [x] 12-02-PLAN.md - End-to-end integration validation (Wave 2)
 
 ## Progress
 
@@ -112,6 +112,6 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 | 9. Cross-Workspace Dispatch | v1.1 | 2/2 | Complete | 2026-01-30 |
 | 10. Portfolio Visibility | v1.1 | 3/3 | Complete | 2026-01-30 |
 | 11. Trust & Approval Gates | v1.1 | 2/2 | Complete | 2026-01-30 |
-| 12. Anti-Gravity Integration | v1.1 | 0/2 | Planned | - |
+| 12. Anti-Gravity Integration | v1.1 | 2/2 | Complete | 2026-01-31 |
 
 **Coverage:** 14/14 requirements mapped
