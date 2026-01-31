@@ -1,399 +1,285 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-01-29
-
-## Overview
-
-Manifest Automations uses a multi-paradigm approach combining shell scripts, YAML specifications, and structured markdown documentation. The codebase prioritizes clarity, atomicity, and auditability.
+**Analysis Date:** 2026-01-31
 
 ## Naming Patterns
 
 **Files:**
-- Shell scripts: `kebab-case.sh` (e.g., `worktree-create.sh`, `render-dashboard.sh`)
-  - Library files grouped in `lib/` subdirectories: `logger.sh`, `parser.sh`, `lock.sh`
-  - Executable scripts: start with `#!/usr/bin/env bash`
-- Configuration files: kebab-case with file extension (e.g., `.gitattributes`, `.gitmodules`)
-- YAML specifications: `agent-manifest.schema.json`, `*.yaml` for agent definitions
-- Documentation: `UPPERCASE.md` for major docs (e.g., `PLAN.md`, `RESEARCH.md`, `SUMMARY.md`)
-- Phase directories: `NN-description` format (e.g., `01-foundation`, `02-github-coordination`)
+- Bash scripts: `kebab-case.sh` (e.g., `execute.sh`, `parser.sh`, `scope-validator.sh`)
+- Library scripts: `noun.sh` suffix pattern (e.g., `logger.sh`, `validator.sh`, `audit.sh`)
+- JSON data files: kebab-case with domain prefix (e.g., `issue-42-1234567890.jsonl`, `incident-20260127-235311-test-agent.json`)
+- Markdown planning: `NN-CONTEXT.md`, `NN-RESEARCH.md`, `NN-01-PLAN.md`, `NN-02-SUMMARY.md` (e.g., `03-single-worker/03-01-PLAN.md`)
+- Template files: domain-based (e.g., `summary.md`, `plan-comment.md`)
 
-**Functions:**
-- Shell functions: `snake_case` (e.g., `acquire_lock`, `log_event`, `extract_section`, `render_progress_bar`)
-- Function documentation: inline comments above function definition explaining parameters and return values
-- Example from `logger.sh`:
-  ```bash
-  # Log a structured JSON event
-  # Arguments: event_type [--arg key value]...
-  log_event() {
-    ...
-  }
-  ```
+**Functions (Bash):**
+- Private functions: `_prefix_name()` or no prefix, used internally within script
+- Exported functions: PascalCase or snake_case, explicitly exported with `export -f`
+- Library functions: snake_case (e.g., `parse_issue_body()`, `acquire_lock()`, `validate_command()`, `record_violation()`)
+- Getter functions: prefix with `get_` (e.g., `get_trust_status()`, `get_staleness_threshold()`)
 
 **Variables:**
-- Global shell variables: `UPPERCASE` (e.g., `LOCK_DIR`, `REPO_ROOT`, `LOG_FILE`)
-- Local shell variables: `lowercase` (e.g., `issue`, `lock_age`, `threshold`)
-- Exported environment variables: `UPPERCASE` (follows shell convention)
-- JSON field names: `snake_case` (e.g., `issue_number`, `event_type`, `session_id`, `cache_age_seconds`)
+- Global variables: UPPER_SNAKE_CASE (e.g., `LOCK_DIR`, `LOG_FILE`, `SESSION_ID`, `SCRIPT_DIR`, `REPO_ROOT`)
+- Local variables: lower_snake_case (e.g., `issue`, `lock_metadata`, `threshold`, `current_score`)
+- Configuration keys: lower_snake_case with dot notation in JSON (e.g., `command_timeout_seconds`, `lock_staleness_threshold_seconds`)
+- Boolean flags: descriptive names without `is_` prefix (e.g., `FORCE_LOCK`, `STATUS_ONLY`, `allowed`, `found`)
 
-**Types/Schemas:**
-- Agent manifest files: `*.yaml` with schema reference at top: `yaml-language-server: $schema=../../schemas/agent-manifest.schema.json`
-- JSON schemas: Located in `schemas/` directory with `.schema.json` extension
-- Type definitions in YAML comments: Documented inline with field descriptions
+**Directories:**
+- Projects: kebab-case (e.g., `01-foundation`, `03-single-worker`, `06-worker-parallelization`)
+- Infrastructure: dot-prefixed for framework (e.g., `.claude/`, `.worker/`, `.planning/`)
+- Subdirectories: descriptive lowercase (e.g., `skills/`, `commands/`, `agents/`, `lib/`, `logs/`, `locks/`)
 
 ## Code Style
 
-**Shell Scripts:**
+**Formatting:**
+- Bash scripts use 2-space indentation (not tabs)
+- Line length: No strict limit observed, but keep under 120 characters where practical
+- No automatic formatter configured (no .prettierrc or eslint configs present)
 
-### Formatting
-- Indentation: 2 spaces for readability
-- Line length: Prefer under 100 characters, wrap long commands
-- Comments: Use `#` for single-line, `# Comment` format (space after hash)
-- Functions: Defined with `function_name() {` syntax, not `function function_name`
+**Bash Strict Mode:**
+All production scripts use: `set -euo pipefail`
+- `-e`: Exit on any error
+- `-u`: Exit on undefined variable
+- `-o pipefail`: Propagate pipe failures
 
-Example from `render-dashboard.sh`:
-```bash
-# Render ASCII progress bar (10 chars)
-# Input: percent (0-100)
-# Output: ASCII bar like "[========= ]"
-render_progress_bar() {
-  local percent="${1:-0}"
-  ...
-}
-```
+**Comments:**
+- Header comments: `# script-name.sh - One-line description`
+- Usage comments: Provide usage examples in header
+- Section comments: `# --- Section Name ---`
+- Function comments: Include purpose, arguments, and returns
+- Inline comments: Sparingly, for non-obvious logic
 
-### Error Handling
-- Start scripts with `set -euo pipefail` to catch errors immediately
-- Functions return 0 on success, 1 on failure (shell convention)
-- Echo errors to stderr (use `>&2` redirect for error messages)
-- Example from `lock.sh`:
-  ```bash
-  set -euo pipefail
-
-  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-    echo "[error] Failed to acquire lock" >&2
-    return 1
-  fi
-  ```
-
-### Quoting Rules
-- Always quote variables: `"$variable"` not `$variable`
-- Exception: Array expansion in specific contexts: `"${arg_flags[@]}"`
-- Command substitution: `$(command)` not backticks
-- Default values: `"${1:-default}"` for parameters
-
-Example from `lock.sh`:
-```bash
-local issue="$1"
-LOCK_DIR=".worker/locks/issue-${issue}.lock"
-```
-
-### Atomic Operations
-- Use `mkdir` for atomic directory locking (works on NTFS/Windows)
-- Use `jq` for JSON manipulation (not string parsing)
-- Use absolute paths when possible for clarity in logs
-- Document platform-specific considerations (e.g., MINGW64 behavior)
-
-Example comment from `lock.sh`:
-```bash
-# NOTE: Uses mkdir for atomic locking (flock not available on Windows/MINGW64)
-```
+**String Quoting:**
+- Always quote variables: `"$var"` not `$var`
+- Use `$()` for command substitution, not backticks
+- Use single quotes for literal strings: `echo '{"status": "ok"}'`
+- Use double quotes for interpolation: `echo "Value: $var"`
 
 ## Import Organization
 
-**Shell Script Sourcing:**
-- Order: Standard library → Project utilities → Configuration
-- Use absolute or relative paths: `source "$LIB_DIR/logger.sh"`
-- Check file existence before sourcing: `if [ -f "$file" ]`
-- Example from `execute.md`:
-  ```bash
-  source "$LIB_DIR/logger.sh"
-  source "$LIB_DIR/lock.sh"
-  source "$LIB_DIR/parser.sh"
-  ```
+**Bash Script Dependencies:**
+Scripts source library files in a specific order:
 
-**JSON/jq Usage:**
-- Output: `-r` for raw text, `-c` for compact
-- Input: Use `--arg` or `--argjson` for data, never string concatenation
-- Example from `logger.sh`:
-  ```bash
-  jq -nc \
-    --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-    --arg event_type "$event_type" \
-    '{timestamp: $timestamp, event_type: $event_type}'
-  ```
+1. Core libraries first (from `.claude/skills/worker/lib/`):
+   ```bash
+   source "$LIB_DIR/logger.sh"
+   source "$LIB_DIR/lock.sh"
+   source "$LIB_DIR/parser.sh"
+   source "$LIB_DIR/audit.sh"
+   source "$LIB_DIR/validator.sh"
+   source "$LIB_DIR/hooks.sh"
+   ```
 
-**YAML Agent Specifications:**
-- Top-level keys: `name`, `version`, `author`, `description`
-- Structured sections: `tools`, `dependencies`, `resources`, `execution`, `routing`, `constraints`
-- Path references: Use glob patterns in constraints (e.g., `src/**`, `**/.env*`)
+2. Extension libraries after core:
+   ```bash
+   source "$WORKER_SCRIPT_DIR/lib/graph-parser.sh"
+   source "$WORKER_SCRIPT_DIR/spawn-subagent.sh"
+   ```
+
+3. Path preservation note: Save `SCRIPT_DIR` before sourcing libs that may overwrite it
+
+**Path Aliases:**
+- `REPO_ROOT` or `PROJECT_ROOT`: Repository root, computed as: `$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)`
+- `SCRIPT_DIR`: Directory of current script, computed early before sourcing
+- `LIB_DIR`: Library directory path, typically `.claude/skills/worker/lib/`
+- `WORKER_DIR`: Worker infrastructure directory: `.worker/`
 
 ## Error Handling
 
-**Strategy:** Fail fast with clear error messages
-
 **Patterns:**
+- All scripts start with `set -euo pipefail` for automatic error propagation
+- Explicit error checks for external commands: `if [ $? -ne 0 ]; then echo "[error]..."; return 1; fi`
+- Use structured output for errors: `echo "[error] Description" >&2` (stderr)
+- Return codes: 0 for success, 1 for failure
+- No try-catch blocks (Bash doesn't support), instead use conditional checks
 
-1. **Validation at Entry:**
-   - Check required arguments immediately
-   - Return 1 with error message to stderr
-   - Example from `parser.sh`:
-     ```bash
-     if [ -z "$ISSUE_BODY" ] || [ "$ISSUE_BODY" = "null" ]; then
-       echo "[error] Issue #${issue} has no body" >&2
-       return 1
-     fi
-     ```
+**Error Messages:**
+- Format: `[error]` prefix for consistency
+- Include context: command name, what failed, why, and suggestions when applicable
+- Example: `[error] Worker already running for issue #${issue}` or `[error] Stale lock detected (${lock_age}s old, threshold: ${threshold}s)`
 
-2. **Locked Section Pattern:**
-   - Atomic directory creation for mutual exclusion
-   - Check staleness before reporting failure
-   - Document fallback with `--force` flag
-   - From `lock.sh`:
-     ```bash
-     if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-       # Check staleness, allow force override
-       if [ "$lock_age" -gt "$threshold" ] && [ "$force" = "true" ]; then
-         rm -rf "$LOCK_DIR"
-         mkdir "$LOCK_DIR"
-       else
-         return 1
-       fi
-     fi
-     ```
-
-3. **Signal Handling:**
-   - Use trap for cleanup on EXIT, SIGTERM, SIGINT
-   - Set state variable for context during interruption
-   - Example from `execute.md`:
-     ```bash
-     WORKER_STATE="initializing"
-     handle_signal() {
-       if [ "$WORKER_STATE" = "executing" ]; then
-         gh issue edit "$ISSUE_NUMBER" --add-label "worker:partial"
-       fi
-       exit 130
-     }
-     trap 'handle_signal SIGTERM' SIGTERM
-     ```
+**Specific Error Types:**
+- Validation errors: Return JSON with `{"action": "block", "severity": "...", "reason": "..."}`
+- Trust violations: Return JSON with `{"status": "recorded", "new_score": ..., "threshold_status": "..."}`
+- Parameter errors: Return JSON with `{"status": "error", "reason": "..."}`
 
 ## Logging
 
-**Framework:** Structured JSON event logging via `logger.sh`
+**Framework:** Custom JSON event logging system in `logger.sh`
 
-**Pattern:**
-- Call `init_logging "$ISSUE_NUMBER"` once at script start
-- Use `log_event "event_type" --arg key value --arg key2 value2` throughout
-- Each event includes: timestamp, event_type, event_id, session_id, data
-- Output: JSONL format (one JSON object per line) to `.worker/logs/issue-N-TIMESTAMP.jsonl`
+**Patterns:**
+- Initialize logging: `init_logging 42` (issue number)
+- Log structured events: `log_event "event_type" --arg key value --arg key2 value2`
+- Session lifecycle: `log_session_start` automatically on init, `log_session_end` on completion
 
-Example from `logger.sh`:
-```bash
-log_event "plan_posted" --arg base_sha "$BASE_SHA"
-log_event "execution_complete" \
-  --arg pr_number "$PR_NUMBER" \
-  --arg duration "$DURATION"
-```
+**Log Format:**
+- JSONL (JSON Lines): One JSON object per line
+- Required fields: `timestamp` (ISO-8601), `event_type`, `event_id`, `session_id`, `data`
+- File location: `.worker/logs/issue-${issue}-${timestamp}.jsonl`
 
-**Log Levels:** Not explicit, but indicated by event_type:
-- `session_start`, `session_end` - Session lifecycle
-- `error` - Error conditions
-- `warning` - Non-blocking issues
-- Domain-specific: `parse_failed`, `lock_failed`, `execution_start`, etc.
+**Common Event Types:**
+- `session_start`: Worker begins processing
+- `session_end`: Worker completes
+- `error`: Error condition
+- `validation_result`: Guard rail validation result
+- `violation`: Trust violation recorded
 
 ## Comments
 
 **When to Comment:**
-- Function signatures: Always include (purpose, arguments, return values)
-- Complex logic: Explain the WHY, not the WHAT
-- Non-obvious calculations: Document formula or assumptions
-- Gotchas/platform quirks: Note Windows/Mac/Linux differences
+- Complex conditional logic: Explain the reasoning
+- Non-obvious bash idioms: Why this approach was chosen
+- Important state transitions: What's changing and why
+- Section breaks: Group related functionality
 
 **JSDoc/TSDoc:**
-Not used (shell scripts don't have standardized doc format). Instead use inline comments above function definitions.
+Not applicable - codebase is bash scripts and markdown. Instead use inline bash function comments:
 
-Example from `lock.sh`:
 ```bash
-# Acquire lock for an issue
-# Arguments: issue_number [force=false]
-# Returns: 0 on success, 1 on failure
-acquire_lock() {
-  ...
+# Function name and one-line purpose
+# Arguments: $1 description, $2 description
+# Returns: exit code (0=success, 1=failure), may also echo JSON
+function_name() {
+  # Implementation
 }
 ```
 
-**Inline Comments:**
-- Document complex jq expressions
-- Explain conditionals that aren't obvious
-- Mark temporary workarounds with `# FIXME:` or `# TODO:`
-
-From `render-dashboard.sh`:
+**Documentation Comment Convention:**
+Functions that return JSON have explicit format documentation:
 ```bash
-# Calculate filled segments (out of 10)
-local filled=$((percent / 10))
-local empty=$((10 - filled))
+# Returns:
+#   JSON: {action: "allow|block|confirm", severity, reason, alternatives[]}
 ```
 
 ## Function Design
 
-**Size:** Keep functions focused and under 50 lines when possible
+**Size:** No strict limit observed, but files typically 80-600 lines per script
 
 **Parameters:**
-- Use positional arguments for required parameters
-- Use optional flags for options (e.g., `--force`, `--output`)
-- Quote all parameter expansion: `"$1"` not `$1`
-- Provide defaults via parameter expansion: `"${1:-default}"`
+- Pass individual arguments: `function_name "$arg1" "$arg2"`
+- Optional parameters: Use `${var:-default}` syntax
+- Required parameters: Validate at function start, return error if missing
+- JSON objects: Pass as jq expressions or JSON strings
 
 **Return Values:**
-- 0 = success, 1 = failure (POSIX convention)
-- Use `echo` to return data (caller captures with `$()`)
-- Multiple return values: Use JSON for complex returns
-- Document return contract in function header
+- Exit code: 0 for success, 1 for failure
+- Output on stdout: Typically JSON for structured data
+- Errors on stderr: `echo "..." >&2`
+- Side effects: Update global state (files, environment variables)
 
-Example from `parser.sh`:
-```bash
-# Parse issue body and extract sections
-# Arguments: issue_number
-# Returns: 0 on success, 1 on failure
-# Sets: ISSUE_* variables
-parse_issue_body() {
-  local issue="$1"
-  ...
-  return 0
-}
-```
+**Function Scope:**
+- Functions at file level or after sourcing dependencies
+- Private functions: Prefix with `_` if not exported
+- Exported functions: Use `export -f function_name` at end of library file
 
 ## Module Design
 
-**Exports:** Functions are the primary export unit
-
-**Library Organization:**
-- One concern per file: `logger.sh` handles logging only
-- No global state mutation except initialization
-- Libraries source other libraries if needed
-- Example structure in `.claude/skills/worker/lib/`:
-  - `logger.sh` - Event logging
-  - `lock.sh` - Lock management
-  - `parser.sh` - GitHub issue parsing
-  - `validator.sh` - Input validation
-  - `hooks.sh` - Custom action hooks
-  - `audit.sh` - Audit trail management
+**Exports:**
+Library files explicitly export their public functions:
+```bash
+export -f load_guardrail_rules
+export -f command_matches_pattern
+export -f validate_command
+# ... more exports
+```
 
 **Barrel Files:**
-Not used in shell (no concept of barrel/index files). Instead, include path is documented in skill files.
+Not used in bash context. Each library file (`logger.sh`, `validator.sh`, etc.) is a distinct module sourced independently.
 
-## Documentation
+**Single Responsibility:**
+Each library has clear focus:
+- `logger.sh`: Event logging infrastructure
+- `validator.sh`: Trust and command validation
+- `parser.sh`: Issue body parsing
+- `lock.sh`: Lock file management
+- `audit.sh`: Cryptographic audit trail
+- `hooks.sh`: Validation hooks for command execution
 
-**Markdown Conventions:**
+## Markdown Document Patterns
 
-### File Structure
-- Title: `# File Purpose` (one H1)
-- Metadata block: YAML frontmatter or inline (date, version)
-- Sections: H2 headers (`##`) for major sections
-- Subsections: H3 headers (`###`) for details
-- Code blocks: Use triple backticks with language identifier
-
-### Planning Phase Documents
-- `NN-RESEARCH.md` - Investigation findings
-- `NN-XX-PLAN.md` - Detailed execution plan
-- `NN-XX-SUMMARY.md` - Completion report
-- `NN-CONTEXT.md` - Phase overview and dependencies
-- `NN-VERIFICATION.md` - Success criteria
-
-### Skill Documentation
-- YAML frontmatter with `name`, `description`, `allowed-tools`, `context`
-- H1 title matches skill name
-- Execution section: How to run the skill
-- State machine or workflow diagram if applicable
-- Error handling section
-- Integration points documented
-
-Example from `.claude/skills/ceo-dashboard/SKILL.md`:
+**Planning Documents:**
+All phase plans follow YAML front matter with structure:
 ```yaml
 ---
-name: dashboard
-description: Show executive dashboard with agent status, trust health...
-allowed-tools: Read, Bash
-context: fork
+phase: XX-phase-name
+plan: NN
+type: execute|research|verify
+wave: N
+depends_on: [list of dependencies]
+files_modified: [list of files changed]
+autonomous: true|false
 ---
+
+<objective>
+  Clear statement of what is being achieved
+  Purpose: Why this matters
+  Output: What the deliverable is
+</objective>
+
+<execution_context>
+  @path/to/workflow.md
+  @path/to/template.md
+</execution_context>
+
+<context>
+  @path/to/context1.md
+  @path/to/context2.md
+</context>
+
+<tasks>
+  <task type="auto|manual">
+    <name>Task 1: Name</name>
+    <files>file-list</files>
+    <action>Detailed action steps</action>
+    <verify>How to verify completion</verify>
+    <done>Completion statement</done>
+  </task>
+</tasks>
 ```
 
-## Platform-Specific Handling
-
-**Windows/MINGW64:**
-- Use `/` not `\` for paths in scripts
-- Use `jq` for JSON (handles Windows line endings)
-- Avoid `flock` (use `mkdir` for atomic locking)
-- Absolute paths: Resolve via `$(pwd)` or git rev-parse
-
-From `lock.sh`:
-```bash
-# NOTE: Uses mkdir for atomic locking (flock not available on Windows/MINGW64)
-```
-
-From `render-dashboard.sh`:
-```bash
-# Navigate to repo root (works on Windows + Unix)
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-if [ ! -d "$REPO_ROOT/.worker" ]; then
-  REPO_ROOT="$(pwd)"
-  while [ ! -d "$REPO_ROOT/.worker" ] && [ "$REPO_ROOT" != "/" ]; do
-    REPO_ROOT="$(dirname "$REPO_ROOT")"
-  done
-fi
-```
-
-**Date/Time:**
-- Use `date -u +"%Y-%m-%dT%H:%M:%SZ"` for UTC ISO8601
-- Use `date +%s` for Unix timestamps
-- Handle stat command differences: `stat -c %Y` (Linux) vs `stat -f %m` (macOS)
-
-## Agent Specifications
-
-**YAML Format:**
-- Schema validation: Reference JSON schema at top with yaml-language-server directive
-- Structure: Flat key-value pairs with nested objects for complex config
-- Tools list: Strings of available tool names (e.g., `read_file`, `write_file`, `run_bash`)
-- Constraints: `allow` and `deny` lists with glob patterns
-- Routing: Priority number (0-100), tags for categorization
-
-Example from `backend-developer.yaml`:
+**Must-Haves Section:**
+Documents include verification criteria:
 ```yaml
-# yaml-language-server: $schema=../../schemas/agent-manifest.schema.json
-name: backend-developer
-version: 1.0.0
-
-tools:
-  - read_file
-  - write_file
-
-constraints:
-  allow:
-    - "src/**"
-    - "tests/**"
-  deny:
-    - "**/.env*"
+must_haves:
+  truths:
+    - "Fact 1"
+  artifacts:
+    - path: "file/path"
+      provides: "Purpose"
+      contains: "Key content"
+  key_links:
+    - from: "source"
+      to: "target"
+      via: "how connected"
+      pattern: "matching pattern"
 ```
 
-## Commit Message Format
+## Special Patterns
 
-While not code conventions, documented in project for consistency:
+**JSON in Bash:**
+- Construct JSON with `jq -n`: `jq -nc --arg key "value" '{key: $key}'`
+- Parse JSON with `jq`: `echo "$json" | jq '.field'`
+- Pass JSON objects to functions: As strings, parsed by jq in the function
 
-- Title: Lowercase verb + noun (e.g., `docs: start milestone v1.1`)
-- Body: Optional, detailed explanation of changes
-- Co-author: `Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>` when applicable
-- Scope: Optional, in brackets (e.g., `docs(07): complete phase`)
-
-Example:
+**Trust System Variables:**
+Scripts dealing with trust use consistent JSON structure:
+```json
+{
+  "action": "allow|block|confirm",
+  "severity": "critical|high|medium|low",
+  "reason": "Human-readable explanation",
+  "alternatives": []
+}
 ```
-docs(07): complete CEO interface phase
 
-- Documented all skills and workflows
-- Created verification plan
-- Updated milestone status
-
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-```
+**Issue Processing:**
+GitHub issues have standardized structure parsed by `parser.sh`:
+- `## Summary` section (required)
+- `## Context` section
+- `## Acceptance Criteria` section (required)
+- `## Subtasks` section
+- `## Dependencies` section
+- `## Notes` section
 
 ---
 
-*Convention analysis: 2026-01-29*
+*Convention analysis: 2026-01-31*

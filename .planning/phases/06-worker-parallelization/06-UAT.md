@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 06-worker-parallelization
 source: [06-01-SUMMARY.md, 06-02-SUMMARY.md, 06-03-SUMMARY.md, 06-04-SUMMARY.md, 06-05-SUMMARY.md]
 started: 2026-01-29T03:30:00Z
@@ -102,9 +102,12 @@ skipped: 7
   reason: "User reported: scripts/worker/execute.sh: line 32: /c/Users/tyler/Manifest Automations/.claude/skills/worker/lib/graph-parser.sh: No such file or directory"
   severity: major
   test: 8
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "LIB_DIR in execute.sh points to .claude/skills/worker/lib/ but graph-parser.sh only exists at scripts/worker/lib/"
+  artifacts:
+    - path: "scripts/worker/execute.sh"
+      issue: "LIB_DIR on line 22 points to wrong directory"
+  missing:
+    - "Change LIB_DIR from .claude/skills/worker/lib to scripts/worker/lib"
   debug_session: ""
 
 - truth: "Graph parser library can be sourced and extract_execution_graph function works"
@@ -112,7 +115,16 @@ skipped: 7
   reason: "User reported: when I attempt to run source ..., it fails with bash: BP_PIPESTATUS: unbound variable"
   severity: major
   test: 9
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "set -euo pipefail at global scope applies -u to parent shell, breaking user prompt config that uses undefined BP_PIPESTATUS"
+  artifacts:
+    - path: "scripts/worker/lib/graph-parser.sh"
+      issue: "set -euo pipefail at line 37"
+    - path: "scripts/worker/lib/scope-validator.sh"
+      issue: "set -euo pipefail at line 2"
+    - path: "scripts/worker/lib/subagent-scope.sh"
+      issue: "set -euo pipefail at line 2"
+    - path: "scripts/worker/lib/timeout-manager.sh"
+      issue: "set -euo pipefail at line 2"
+  missing:
+    - "Remove set -euo pipefail from library files designed to be sourced"
+  debug_session: ".planning/debug/bp-pipestatus-unbound.md"

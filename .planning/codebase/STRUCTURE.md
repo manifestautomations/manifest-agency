@@ -1,269 +1,240 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-01-29
+**Analysis Date:** 2026-01-31
 
 ## Directory Layout
 
 ```
 Manifest Automations/
-├── .claude/                     # Claude Code configuration
-│   ├── commands/
-│   │   ├── research/            # Research commands (create-prompt, run-prompt)
-│   │   └── worker/              # Worker execution command
-│   ├── skills/
-│   │   ├── ceo-dashboard/       # Executive dashboard, briefing, approvals
-│   │   ├── worker/              # Worker execution skill + lib/
-│   │   └── orchestrate/         # (Gemini-only, referenced)
-│   ├── agents/                  # Specialized subagent prompts (for future use)
-│   └── hooks/                   # Git hooks (if any)
-├── .planning/                   # Agency-level planning & analysis
-│   ├── codebase/                # Codebase analysis docs (STACK.md, etc.)
-│   ├── phases/                  # Per-phase documentation (01-07)
-│   ├── milestones/              # Milestone definitions
-│   ├── research/                # Research notes
-│   ├── active-projects.md       # Project registry
-│   ├── trust-ledger.md          # Trust tracking (references only)
-│   └── MILESTONES.md            # Release history
-├── .worker/                     # Runtime state for worker system
-│   ├── agents/                  # Agent constraint configs
-│   ├── approvals/               # Trust approval workflow
-│   │   ├── pending/             # Awaiting CEO decision
-│   │   ├── approved/            # CEO approved
-│   │   ├── denied/              # CEO denied
-│   │   └── registry.jsonl       # Approval audit log
-│   ├── audit/                   # Hash-chained audit trail
-│   │   └── chain.json           # Tamper-evident event log
-│   ├── briefings/               # Daily briefing history
-│   ├── dispatch/                # Orchestrator dispatch state
-│   ├── logs/                    # Worker execution logs (JSONL)
-│   ├── locks/                   # Per-issue execution locks
-│   ├── violations/              # Trust violation tracking
-│   └── config.json              # Runtime configuration
-├── .gemini/                     # Gemini orchestrator (external, referenced)
-│   └── skills/                  # orchestrate.md (not in this repo)
-├── .github/                     # GitHub workflows and config
-│   └── workflows/               # CI/CD workflows
-├── scripts/                     # Executable shell scripts
-│   ├── ceo/                     # CEO interface scripts
-│   │   └── README.md            # CEO command guide
-│   ├── orchestrator/            # Orchestration scripts
-│   │   ├── intent.sh            # Intent classification
-│   │   ├── decompose.sh         # Task decomposition
-│   │   ├── graph.sh             # Dependency graph analysis
-│   │   ├── dispatch.sh          # Worker dispatch
-│   │   ├── aggregate.sh         # Status aggregation
-│   │   └── README.md            # Orchestrator guide
-│   ├── worker/                  # Worker execution scripts
-│   │   ├── execute.sh           # Main worker entry point (Phase 3+)
-│   │   ├── lib/                 # Worker libraries (Phase 6+)
-│   │   │   ├── graph-parser.sh  # Execution graph parsing
-│   │   │   └── spawn-subagent.sh # Sub-agent spawning
-│   │   ├── aggregate-wave.sh    # Wave result aggregation
-│   │   └── (legacy scripts)     # Older worktree management
-│   ├── github/                  # GitHub API wrapper scripts
-│   │   ├── issue-create.sh      # Create issues
-│   │   ├── pr-create.sh         # Create PRs
-│   │   ├── issue-claim.sh       # Claim issue ownership
-│   │   └── (others)             # Status updates, comments
-│   └── README.md                # Scripts overview
-├── commands/                    # Named command triggers (legacy)
-│   ├── research/                # Research command definitions
-│   └── (others)                 # Command index
-├── projects/                    # Project submodules (git submodules)
-│   ├── project-a/               # Each is separate repo
-│   └── project-b/               # Checked in as submodule
-├── prompts/                     # Generated prompt library
-│   ├── completed/               # Archived prompts
-│   └── (active prompts)         # Current active prompts
-├── templates/                   # Bootstrapping templates
-│   ├── new-project/             # Template for new projects
-│   │   ├── .planning/           # Planning directory template
-│   │   ├── CLAUDE.md            # Project guidelines template
-│   │   └── README.md            # Project readme template
-│   ├── agent-manifest/          # Agent definition template
-│   ├── documentation/           # Doc templates
-│   ├── github/                  # GitHub config templates
-│   ├── orchestrator/            # Orchestrator skill template
-│   └── project-scaffold/        # Full project bootstrap
-├── schemas/                     # JSON schemas and data structures
-│   └── (schema definitions)     # Schema files for validation
-├── docs/                        # General documentation
-│   └── (markdown docs)          # Guides and references
-├── CLAUDE.md                    # Agency-level conventions & guidelines
-└── README.md                    # Project overview
+├── .claude/                      # Agency-wide Claude configuration
+│   ├── agents/                   # Agent manifest declarations
+│   ├── commands/                 # CLI-style command definitions
+│   │   ├── research/             # Research domain commands
+│   │   └── worker/               # Worker execution commands
+│   ├── skills/                   # Reusable workflow implementations
+│   │   ├── ceo-dashboard/        # Executive visibility skill
+│   │   └── worker/               # Issue execution orchestration
+│   └── settings.json             # Trust and permission configuration
+├── .planning/                    # Agency-level planning and tracking
+│   ├── phases/                   # Milestone phase planning (phases 01-12)
+│   │   ├── 01-foundation/        # Core infrastructure (git, worktrees, schemas)
+│   │   ├── 02-github-coordination/ # GitHub integration and issue coordination
+│   │   ├── 03-worker-foundation/ # Worker lock and state management
+│   │   ├── ...
+│   │   └── 12-anti-gravity/      # Integration with Agent Manager
+│   ├── milestones/               # v1.0 and v1.1 milestone tracking
+│   ├── codebase/                 # Codebase analysis documents (maps, concerns)
+│   ├── config.json               # Planning configuration (mode, depth, workflow)
+│   └── active-projects.md        # Registry of managed workspaces
+├── .worker/                      # Runtime execution state and audit
+│   ├── agents/                   # Active agent registries per workspace
+│   ├── approvals/                # Approval workflow state
+│   │   ├── pending/              # Awaiting human decision
+│   │   └── approved/             # Executed approvals
+│   ├── audit/                    # Execution history and state transitions
+│   ├── briefings/                # Generated briefings and dashboard data
+│   ├── cache/                    # Performance caches (5-min TTL)
+│   ├── inbox/                    # CEO inbox messages and notifications
+│   ├── violations/               # Trust violations and incident tracking
+│   ├── config.json               # Worker configuration (timeouts, thresholds)
+│   └── lock/                     # Exclusive access locks for issue execution
+├── .gemini/                      # Multi-model orchestration (Google Gemini config)
+├── .cache/                       # GitHub API response cache (for rate limiting)
+├── scripts/                      # Executable automation scripts
+│   ├── worker/                   # Issue execution and worktree lifecycle
+│   │   ├── execute.sh            # Main issue execution orchestrator
+│   │   ├── spawn-subagent.sh     # Spawn parallel subagent workers (Phase 6)
+│   │   ├── aggregate-wave.sh     # Aggregate wave results (Phase 6)
+│   │   └── lib/                  # Shared libraries (logger, lock, parser, audit)
+│   ├── dispatch/                 # Workspace dispatch and routing
+│   │   ├── dispatch-to-workspace.sh # Route work to specific workspace
+│   │   ├── fuzzy-match.sh        # Workspace name resolution (Levenshtein)
+│   │   ├── trust-validation.sh   # Pre-execution trust ceiling validation
+│   │   └── approval-gate.sh      # Approval workflow execution
+│   ├── ceo/                      # CEO interface and dashboard rendering
+│   │   ├── dashboard.sh          # Render real-time executive dashboard
+│   │   ├── briefing.sh           # Generate briefing documents
+│   │   └── portfolio/            # Multi-workspace portfolio status
+│   ├── orchestrator/             # Phase planning and orchestration
+│   ├── github/                   # GitHub API interactions
+│   ├── workspace/                # Workspace discovery and management
+│   ├── tests/                    # Test suite and validation
+│   ├── worktree-*.sh             # Git worktree lifecycle management
+│   └── README.md                 # Scripts documentation
+├── projects/                     # Managed workspaces (git submodules)
+│   ├── test-project/             # Example project workspace
+│   ├── high-trust-workspace/     # High-trust workspace example
+│   └── unhealthy-test/           # Test fixture for health validation
+├── templates/                    # Bootstrap templates for new entities
+│   ├── new-project/              # Project workspace template
+│   ├── agent-manifest/           # Agent manifest template
+│   ├── workspace/                # Workspace init template
+│   ├── github/                   # GitHub issue/PR body templates
+│   └── orchestrator/             # Orchestrator planning templates
+├── schemas/                      # Validation schemas
+│   └── agent-manifest.schema.json # YAML schema for agent definitions
+├── prompts/                      # Generated prompt library (completed/)
+├── docs/                         # Documentation and guides
+│   └── GUARDRAILS.md             # Trust system and guardrails documentation
+├── CLAUDE.md                     # Agency-level conventions and trust model
+└── README.md                     # Project overview and getting started
 ```
 
 ## Directory Purposes
 
-**`.claude/`** - Claude Code framework
-- CLI commands accessible from Claude Code interface
-- Skills define multi-step workflows
-- Agents provide specialized personas (future)
-- Organized by domain: ceo-dashboard (UI/approvals), worker (execution)
+**`.claude/`:**
+- Purpose: Configuration and behavior definitions for AI agent orchestration
+- Contains: Agent manifests (YAML), command definitions (Markdown), skill implementations (SKILL.md + .sh), settings
+- Key files: `settings.json` (trust/permissions), agents YAML files, skills with lib/ subdirectories
+- Pattern: Each skill has a SKILL.md frontmatter + implementation script + optional lib/ for helpers
 
-**`.planning/`** - Agency project management
-- codebase/: Analysis documents (STACK.md, ARCHITECTURE.md, etc.)
-- phases/: Numbered phases 01-07 with RESEARCH/PLAN/SUMMARY structure
-- milestones/: Release coordination
-- trust-ledger.md: Agent trust score tracking (in parent sessions)
+**`.planning/`:**
+- Purpose: Agency-level planning, tracking, and codebase analysis
+- Contains: Phase planning docs (RESEARCH → PLAN → SUMMARY per phase), milestone roadmaps, trust ledger, active projects registry
+- Key files: `config.json`, `active-projects.md`, `phases/*/` subdirectories, `codebase/` analysis docs
+- Pattern: Phases numbered 01-12 with subdirectories; each phase has multiple plans (01-01-PLAN.md, 01-02-PLAN.md, etc.)
 
-**`.worker/`** - Runtime state system
-- agents/: Agent configuration and constraints
-- approvals/: Trust approval workflow state (JSON files, JSONL registry)
-- audit/: Hash-chained event log for tamper detection
-- dispatch/: Current dispatch state (what's running)
-- locks/: Per-issue mutex files to prevent concurrent execution
-- logs/: JSONL event logs from worker runs
-- violations/: Trust violation scores and history
-- config.json: Runtime configuration (trust levels, timeouts, notification tiers)
+**`.worker/`:**
+- Purpose: Runtime state and execution tracking across all issue processing
+- Contains: Approval records, audit chains, execution logs, agent registries, caches, violations, briefings
+- Key files: `config.json`, `audit/chain.json`, `approvals/` workflow state, `lock/` exclusive access markers
+- Pattern: Each execution creates records in audit/, locks, and approval flows
 
-**`.github/`** - GitHub integration
-- workflows/: CI/CD pipelines (if any)
+**`scripts/`:**
+- Purpose: Executable automation organized by functional domain
+- Contains: Worker execution, dispatch routing, CEO dashboard, worktree management, GitHub integration
+- Key files: `worker/execute.sh` (main entry), `dispatch/dispatch-to-workspace.sh`, `ceo/dashboard.sh`
+- Pattern: Each major domain (worker, dispatch, ceo) has its own directory; shared code in lib/ subdirectories
 
-**`scripts/`** - Executable automation (NOT npm packages)
-- All shell-based, no node_modules
-- Organized by domain: ceo/, orchestrator/, worker/, github/
-- Each script is independently runnable
-- Libraries in subdirectories (worker/lib/, orchestrator helpers)
+**`projects/`:**
+- Purpose: Managed workspaces as git submodules with isolated trust and planning context
+- Contains: Project directories as submodules; each contains `.planning/`, `.claude/`, source code, tests
+- Key files: Each project has CLAUDE.md, README.md, trust-ledger.md
+- Pattern: Workspace discovery via `.gitmodules`; inherits parent trust but has own ceiling
 
-**`commands/`** - Legacy command triggers
-- Pre-dated current `.claude/commands/` structure
-- May be deprecated, verify before using
+**`templates/`:**
+- Purpose: Reusable bootstrap templates for common entities
+- Contains: Project scaffolds, agent manifest examples, workspace initialization, GitHub workflows
+- Key files: `new-project/` with standard structure, `workspace/` with trust-ledger template
+- Usage: Copy and customize for new projects, workspaces, or agent definitions
 
-**`projects/`** - Project submodules
-- Each project is a separate git repository
-- Linked via git submodules for monorepo management
-- Follow naming: kebab-case (e.g., `customer-api`, `dashboard-ui`)
-
-**`prompts/`** - Prompt library
-- Active prompts for current work
-- completed/: Archived prompts from past phases
-- Generated during orchestration for traceability
-
-**`templates/`** - Bootstrapping
-- new-project/: Template for creating new project repos
-- agent-manifest/: Template for agent definitions
-- orchestrator/: Skill definition template
-- Used by `/setup new-project` command
-
-**`schemas/`** - Data validation
-- JSON schemas for issue decomposition, execution graphs, etc.
-- Referenced in validation scripts
-
-**`docs/`** - General documentation
-- Guides, architectural decisions, troubleshooting
+**`schemas/`:**
+- Purpose: JSON Schema definitions for validation
+- Contains: Agent manifest schema for YAML validation
+- Key files: `agent-manifest.schema.json` (validates agents/*.yaml files)
+- Usage: Referenced in agent YAML files via yaml-language-server directive
 
 ## Key File Locations
 
 **Entry Points:**
 
-- `scripts/orchestrator/intent.sh`: Classify CEO intent (Gemini calls this)
-- `scripts/orchestrator/decompose.sh`: Generate task decomposition (Gemini calls this)
-- `scripts/orchestrator/dispatch.sh`: Dispatch workers (Gemini calls this)
-- `scripts/worker/execute.sh`: Execute single issue (Orchestrator calls this)
-- `.claude/skills/ceo-dashboard/SKILL.md`: Dashboard skill (CEO invokes)
-- `.claude/skills/ceo-dashboard/briefing.SKILL.md`: Briefing skill (CEO invokes)
-- `.claude/skills/ceo-dashboard/approve.SKILL.md`: Approval workflow (CEO invokes)
+- `scripts/worker/execute.sh`: Main issue-to-PR execution orchestrator (invoked by GitHub or CLI)
+- `.claude/skills/ceo-dashboard/SKILL.md`: CEO dashboard definition (entry to dashboard rendering)
+- `scripts/dispatch/dispatch-to-workspace.sh`: Workspace routing entry point (routes work to specific project)
+- `.planning/phases/[NN]-*/[NN]-PLAN.md`: Phase planning entry points (human reads to understand phase)
 
 **Configuration:**
 
-- `CLAUDE.md`: Agency conventions (read by all agents at session start)
-- `.worker/config.json`: Runtime configuration (trust levels, timeouts, notification tiers)
-- `.planning/active-projects.md`: Project registry
+- `CLAUDE.md`: Agency conventions, trust model, workflow hierarchy
+- `.claude/settings.json`: Trust levels, permissions, workflow configuration
+- `.worker/config.json`: Worker timeouts, approval windows, dashboard cache TTL, notification tiers
+- `.planning/config.json`: Planning mode, workflow depth, parallelization settings
 
 **Core Logic:**
 
-- `scripts/orchestrator/graph.sh`: Dependency DAG analysis (topological sort, cycle detection)
-- `scripts/worker/execute.sh`: Worker state machine (planning → awaiting-approval → executing → complete)
-- `scripts/worker/lib/graph-parser.sh`: Execution graph parsing (parallel task definition)
-- `scripts/worker/spawn-subagent.sh`: Sub-agent wave spawning (parallelization)
+- `.claude/skills/worker/lib/`: Shared worker libraries (logger.sh, lock.sh, parser.sh, audit.sh, validator.sh)
+- `scripts/worker/execute.sh`: Main orchestrator for issue processing state machine
+- `scripts/dispatch/dispatch-to-workspace.sh`: Workspace selection and trust validation
+- `scripts/ceo/dashboard.sh` + aggregate scripts: Real-time CEO visibility
 
 **Testing:**
 
-- `test-validator.sh`: Validation test script
-- `.worker/test/`: Test data and fixtures
+- `scripts/tests/`: Test suite including integration tests and validation scripts
+- `test-validator.sh`: Root-level test runner
+
+**Audit & State:**
+
+- `.worker/audit/chain.json`: Immutable execution history with timestamps and state transitions
+- `.worker/approvals/pending/` and `approved/`: Approval workflow records
+- `.worker/lock/issue-*.lock`: Exclusive access markers (prevent concurrent execution)
 
 ## Naming Conventions
 
 **Files:**
 
-- Shell scripts: `kebab-case.sh` (e.g., `worker-execute.sh`, `create-issue.sh`)
-- Markdown docs: `UPPERCASE.md` (ARCHITECTURE.md, CONVENTIONS.md) or `kebab-case.md` (readme.md)
-- JSON data: `descriptive-name.json` (config.json, constraints.json, chain.json)
-- JSONL logs: `pattern-{TIMESTAMP}.jsonl` (issue-42-2026-01-29T12:34.jsonl)
-- Plan files: `issue-{N}-PLAN.md` (issue-42-PLAN.md)
+- **Markdown**: `UPPERCASE.md` for planning docs (BRIEF.md, PLAN.md, SUMMARY.md), lowercase for skills/docs
+- **Scripts**: `kebab-case.sh` (execute.sh, spawn-subagent.sh, approve-workflow.sh)
+- **Agent manifests**: `kebab-case.yaml` (backend-developer.yaml, code-reviewer.yaml)
+- **Lock files**: `issue-[NUMBER].lock` (issue-42.lock)
+- **Approval records**: `[TIMESTAMP]-[type].json` (1769671361625815100.json)
 
 **Directories:**
 
-- Phase directories: `NN-kebab-name/` (01-foundation, 02-github-coordination)
-- Worktree paths: `{repo-name}-{branch-name}/` (manifest-automations-issue-42/)
-- Sub-agent directories: `.worker/agents/{AGENT_ID}/` (test-agent-123)
-- Status icons: `[XX]`, `[..]`, `[??]`, `[OK]`, `[--]` for ASCII rendering
-
-**GitHub Labels:**
-
-- Worker state: `worker:planning`, `worker:awaiting-approval`, `worker:executing`, `worker:complete`
-- Errors: `worker:partial`, `worker:failed`
-- Task types: Not currently used in code (implementation detail)
+- **Phases**: `NN-kebab-case` (01-foundation, 02-github-coordination, 11-trust-approval-gates)
+- **Workspaces**: `kebab-case` under `projects/` (test-project, high-trust-workspace)
+- **Skills**: `kebab-case` under `.claude/skills/` (ceo-dashboard, worker)
+- **Commands**: `kebab-case` under `.claude/commands/` or domain subdirectories
 
 ## Where to Add New Code
 
-**New Worker Script:**
-- Location: `scripts/worker/` or `scripts/worker/lib/` (if library)
-- Pattern: Source from `.claude/skills/worker/lib/` for logging, locking, validation
-- Example: To add a new sub-agent library, create `scripts/worker/lib/new-feature.sh`
+**New Feature/Skill:**
+- **Skill definition**: `.claude/skills/[skill-name]/SKILL.md` (metadata + documentation)
+- **Implementation**: `.claude/skills/[skill-name]/[skill-name].sh` (main script)
+- **Shared libs**: `.claude/skills/[skill-name]/lib/` (if used across multiple skills)
+- **Templates**: `.claude/skills/[skill-name]/templates/` (for generated output)
 
-**New Orchestrator Function:**
-- Location: `scripts/orchestrator/` (as separate script or function in existing script)
-- Pattern: Use `jq` for data processing, GitHub labels for state
-- Example: To add new intent type, extend `intent.sh` with new classification
+**New Phase Planning:**
+- **Phase directory**: `.planning/phases/[NN]-phase-name/`
+- **Research**: `[NN]-RESEARCH.md` (investigation findings)
+- **Plan**: `[NN]-[iteration]-PLAN.md` (execution steps)
+- **Summary**: `[NN]-[iteration]-SUMMARY.md` (completion report)
 
-**New CEO Dashboard Component:**
-- Location: `.claude/skills/ceo-dashboard/` (new SKILL.md file or template)
-- Pattern: Call aggregate-status.sh, render to ASCII, deliver to inbox
-- Example: New dashboard widget → new SKILL.md file, new render function
+**New Workspace/Project:**
+- **Workspace directory**: `projects/[project-name]/` (as git submodule)
+- **Project structure**: Copy from `templates/new-project/` or `templates/workspace/`
+- **Trust setup**: `projects/[project-name]/trust-ledger.md` (inherits parent ceiling)
+- **Registration**: Add entry to `.planning/active-projects.md`
 
-**New Skill or Agent:**
-- Location: `.claude/skills/{domain}/` or `.claude/agents/{role}/`
-- Pattern: Self-contained markdown file with instructions
-- Example: New skill → `skills/new-domain/SKILL.md`
+**New Utilities/Helpers:**
+- **Shared worker libs**: `scripts/worker/lib/[function-name].sh`
+- **Domain-specific scripts**: `scripts/[domain]/[script-name].sh`
+- **Global utilities**: `scripts/util/` (if shared across domains)
 
-**New Project:**
-- Template: Copy `templates/new-project/` to `projects/project-name/`
-- Register: Add entry to `.planning/active-projects.md`
-- Structure: Each project has its own `.planning/`, `CLAUDE.md`, `README.md`
+**New Commands:**
+- **Command definition**: `.claude/commands/[domain]/[command-name].md`
+- **Command implementation**: Markdown file with frontmatter + description + invocation examples
 
-**Utilities/Helpers:**
-- Shared: `scripts/` (domain-specific subdirectories)
-- Project-specific: `projects/{name}/scripts/`
-- Never: `node_modules/`, external package managers (scripts are bash-only)
+**New Agent Manifest:**
+- **Manifest file**: `.claude/agents/[agent-name].yaml`
+- **Template**: Copy from `templates/agent-manifest/base.yaml` and customize
+- **Validation**: Must conform to `schemas/agent-manifest.schema.json`
 
 ## Special Directories
 
-**`.worker/` (Runtime State):**
-- Purpose: All worker system state (not code, data only)
-- Generated: Yes, created by scripts at runtime
-- Committed: .gitkeep files only; actual state files excluded via .gitignore
-- Lifecycle: Ephemeral; reset between orchestration runs
+**`.worker/`:**
+- Purpose: Runtime state, never committed to git
+- Generated: Yes (created at runtime by worker scripts)
+- Committed: No (in .gitignore)
+- Lifetime: Persistent across sessions; cleaned by `worktree-cleanup.sh`
 
-**`.planning/codebase/` (Analysis Docs):**
-- Purpose: Codebase reference documents (generated by /gsd:map-codebase)
-- Generated: Yes, created on demand
-- Committed: Yes, should be committed for team visibility
-- Contents: STACK.md, ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md
+**`prompts/completed/`:**
+- Purpose: Archive of generated prompts from research commands
+- Generated: Yes (by `create-prompt.md` command)
+- Committed: Yes (for reference and audit)
+- Pattern: One file per research session with timestamp
 
-**`projects/` (Submodules):**
-- Purpose: Each project is separate git repo linked via submodule
-- Generated: No, user-created repositories
-- Committed: .gitmodules file tracks submodules
-- Structure: Each project follows template from `templates/new-project/`
+**`.cache/github/`:**
+- Purpose: GitHub API response caching to avoid rate limits
+- Generated: Yes (by GitHub integration scripts)
+- Committed: No (in .gitignore)
+- TTL: Depends on cache type (usually 1 hour)
 
-**`prompts/completed/` (Archive):**
-- Purpose: Historical record of prompts used in each phase
-- Generated: Yes, manually moved here after phase completion
-- Committed: Yes, for audit trail
-- Retention: Permanent archive
+**`.test-workspace/`:**
+- Purpose: Test fixture for validation and integration tests
+- Generated: Yes (created by test scripts)
+- Committed: No (in .gitignore)
+- Cleanup: Deleted between test runs
 
 ---
 
-*Structure analysis: 2026-01-29*
+*Structure analysis: 2026-01-31*

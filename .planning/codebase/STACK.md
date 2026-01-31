@@ -1,137 +1,100 @@
 # Technology Stack
 
-**Analysis Date:** 2026-01-29
+**Analysis Date:** 2026-01-31
 
 ## Languages
 
 **Primary:**
-- Bash (POSIX shell) - Core orchestration, worker dispatch, script infrastructure
-- YAML - Configuration, agent manifests, trust guardrails
+- Bash 4.x+ - All orchestration, worker, and utility scripts
+- Markdown - Configuration, documentation, and planning files
+- JSON - Configuration files and data interchange
 
 **Secondary:**
-- JSON - Configuration files, status/audit data structures
-- Markdown - Documentation, briefing templates, planning documents
+- YAML - Execution graphs, task definitions (parsed by scripts)
 
 ## Runtime
 
 **Environment:**
-- Bash 4.3+ (for `wait -n` support in parallel dispatch)
-- Git 2.43+ (for worktree support)
-- GitHub CLI (gh) 2.x+ (primary API interface)
+- Unix-like shell environment (Linux, macOS, Git Bash on Windows)
+- Git 2.x+
+- POSIX compliance required
 
 **Package Manager:**
-- None (shell-based, external dependency via `gh` CLI)
-- yq (YAML query tool, downloaded at runtime from GitHub releases)
+- None (shell scripts only, no dependency manager)
+- Uses system utilities: `bash`, `git`, `jq`, `yq` (optional)
+- Lockfile: Not applicable (no packaged dependencies)
 
 ## Frameworks
 
 **Core:**
-- GitHub - Coordination layer, issue/PR lifecycle, label-based state machine
-- Git Worktree - Task isolation, parallel execution environment
+- No traditional frameworks - custom orchestration system built on shell
+- GitHub CLI (`gh`) 2.x+ - GitHub API interactions, issue/PR management
+- jq 1.6+ - JSON processing and querying
+- yq 4.x - YAML parsing for execution graphs
 
-**Orchestration:**
-- Bash/Shell - Task dispatch, dependency graph resolution, parallel worker management
-- LangGraph (recommended in planning but not yet implemented) - Multi-agent workflow
+**Testing:**
+- None detected - validation via shell script assertions
 
-**Development/Operations:**
-- pre-commit - Trust enforcement, local validation before commits
+**Build/Dev:**
+- Git worktree - Isolated development branches
+- Bash sourcing pattern - Modular library system
 
 ## Key Dependencies
 
 **Critical:**
-- GitHub CLI (`gh`) - All GitHub interactions (issues, PRs, labels, GraphQL queries, project management)
-- Git (worktree, commit, push operations) - Version control, PR creation, branch management
-- curl or wget - yq binary downloads, external tool installation
+- `gh` (GitHub CLI) - All GitHub API interactions, issue/PR operations
+  - Authentication: GITHUB_TOKEN environment variable
+  - Uses GitHub GraphQL API and REST API
+- `jq` - JSON parsing for logs, dispatch state, configuration
+- `yq` - YAML parsing for execution graphs (optional, feature-dependent)
 
 **Infrastructure:**
-- Redis (recommended in planning) - State management, agent coordination, checkpointing
-- Docker/Docker Compose (recommended) - Multi-agent local development, containerized execution
+- `git` - Version control, worktree management
+- `bash` - Script execution engine
+- `curl` - Available for HTTP operations if needed
 
 ## Configuration
 
 **Environment:**
-- `.claude/settings.json` - Trust levels, permissions, workflow settings
-- `.worker/config.json` - Worker timeouts, GitHub API retry logic, CEO interface settings
-- `.claude/trust-guardrails.yaml` - Safety floor patterns, destructive operation rules, trust-level constraints
+- `.worker/config.json` - Worker behavior (timeouts, retries, guardrails)
+  - `command_timeout_seconds`: 600
+  - `lock_staleness_threshold_seconds`: 1800
+  - `guardrails.enabled`: true/false
+  - `guardrails.default_trust_level`: 0-4
+- `.claude/settings.json` - Claude Code trust and permission settings
+- `.planning/config.json` - Planning behavior (mode, depth, parallelization)
 
-**Runtime Configuration Files:**
-- `.env` - Required environment variables (not tracked, example format in planning docs)
-- Agent manifests in `.claude/agents/` - YAML files with agent capabilities, constraints, tools
-
-**Key Configuration Values:**
-- `command_timeout_seconds`: 600 (10 min default for worker execution)
-- `lock_staleness_threshold_seconds`: 1800 (30 min stale lock detection)
-- `github_api_retry_attempts`: 3
-- `MAX_CONCURRENT`: 3 (default concurrent worker limit)
+**Build:**
+- No build system - pure shell scripts
+- Configuration files: `*.json` in `.worker/`, `.claude/`, `.planning/`
 
 ## Platform Requirements
 
 **Development:**
-- Bash-compatible shell (bash 4.3+, zsh compatible)
-- Git 2.43+ with worktree support
-- GitHub CLI (gh) authenticated with `gh auth`
-- curl or wget for tool downloads
-- jq (JSON query tool, used in dispatch logging)
-- yq (YAML query tool, auto-installed in worker scripts)
+- Git 2.x or newer
+- Bash 4.x or newer
+- GitHub CLI (`gh`) installed and authenticated
+- jq 1.6+ installed
+- Text editor (any)
+- OS: Linux, macOS, or Windows with Git Bash/WSL
 
 **Production:**
-- Same shell/git requirements
-- Redis 7.4+ for state management and coordination
-- GitHub repository with API access
-- cron or similar for scheduled orchestration (optional)
+- Deployment target: GitHub (no separate server needed)
+- Orchestration: Anthropic Claude models (via Claude Code)
+- Execution: Git repositories with GitHub integration
+- File storage: Git repository and `.worker/` local state directory
 
-## External Services
+## External Runtime Dependencies
 
 **Required:**
-- **GitHub** - Issue tracking, PR management, GraphQL API, project boards
-  - Authentication: `gh` CLI (OAuth token stored locally)
-  - Rate limits: 5000 req/hour authenticated, 60 req/hour unauthenticated
+- GitHub CLI - for all GitHub API operations
+- jq - for JSON processing in logs and dispatch
+- git - for version control
 
-**Planned/Optional:**
-- **Gemini API** (Google AI) - Orchestration decision making, intent classification
-  - Environment variable: `GEMINI_API_KEY`
-  - Model: Gemini 3 Pro Preview (agentic orchestration optimized)
-
-- **LangSmith** (LangChain) - Agent observability, tracing
-  - Environment variable: `LANGSMITH_API_KEY`
-  - Purpose: Zero-overhead agent execution tracing
-
-- **Redis** - Agent state, memory, multi-agent coordination
-  - Connection: `REDIS_URL=redis://localhost:6379`
-  - Purpose: Sub-millisecond hot state access, pub/sub messaging, checkpointing
-
-## Build & Development Tools
-
-**Build System:**
-- None (shell-based, no compilation step)
-
-**Code Quality:**
-- ruff (Python linting, recommended for future Python layers)
-- eslint (TypeScript linting, recommended for future TS layers)
-- prettier (Code formatting)
-- pre-commit (Git hook framework for enforcement)
-
-**Testing:**
-- pytest (Python, recommended for future orchestrator layer)
-- Jest or Vitest (TypeScript, recommended for future GitHub integration layer)
-
-**Observability:**
-- Structured logging via jq/JSON to `.worker/audit/chain.json`
-- Dispatch logging to `.worker/dispatch/dispatch.jsonl` (JSONL format)
-- Built-in shell logging via stderr redirection
-
-## Deployment Target
-
-**Current:**
-- GitHub repository (coordination layer)
-- Local/development machine (shell script execution)
-
-**Recommended Future:**
-- Docker containers with compose orchestration
-- Cloud deployment (AWS, GCP, or similar) for persistent orchestrator
-- Redis cloud instance for state management
-- GitHub Actions for CI/CD enforcement
+**Optional:**
+- yq - for YAML execution graph parsing (only if parallel execution enabled)
+- curl - for additional HTTP operations
 
 ---
 
-*Stack analysis: 2026-01-29*
+*Stack analysis: 2026-01-31*

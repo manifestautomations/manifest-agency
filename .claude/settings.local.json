@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(agent-browser snapshot:*)",
+      "Bash(agent-browser:*)",
+      "mcp__MCP_DOCKER__browser_navigate",
+      "Bash(bash scripts/github/project-bootstrap.sh:*)",
+      "Bash(bash -x:*)",
+      "Bash(bash:*)",
+      "Bash(gh api:*)",
+      "Bash(test:*)",
+      "Skill(research:run-prompt)",
+      "Skill(research:run-prompt:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git update-index:*)",
+      "Bash(cat:*)",
+      "Bash(echo:*)"
+    ]
+  }
+}
