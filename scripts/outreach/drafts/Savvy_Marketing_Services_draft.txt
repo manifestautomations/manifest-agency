@@ -1,0 +1,27 @@
+To: TBD
+Subject: Quick question about Savvy Marketing Services's reporting
+
+Hi Kelly,
+
+I noticed Savvy Marketing Services manages campaigns across multiple platforms for your clients.
+
+Quick question: How much time does your team spend each week pulling data from Google Ads, Meta, and GA4 into spreadsheets before they can actually analyze it?
+
+For most agencies your size, it's 10-15 hours per week per analyst — time that could go toward strategy and client growth.
+
+We build automated data pipelines that pull, clean, and visualize your client data automatically. Your team opens a dashboard instead of a spreadsheet.
+
+If that sounds useful, I'd love to show you how it works — 30 minutes, no pitch deck.
+
+[CALENDLY LINK: https://calendly.com/manifest-automations/30min]
+
+Best,
+Tyler Smith
+Manifest Automations
+
+P.S. — We just helped a 25-person agency cut their reporting time by 70%. Happy to share what we did.
+
+---
+
+---
+Internal Note: (Hook: Niche: marketing for therapists. Mentioned reporting pain.)
