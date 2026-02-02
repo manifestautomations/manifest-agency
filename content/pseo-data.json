@@ -1,0 +1,81 @@
+{
+  "industries": [
+    {
+      "slug": "dental",
+      "name": "Dental Clinics",
+      "pain_point": "missed patient calls",
+      "solution": "AI Voice Receptionist",
+      "value_prop": "Capture 100% of after-hours patient inquiries without hiring more staff.",
+      "stats": [
+        { "label": "Missed Calls", "value": "35%", "source": "Invoca 2025 Healthcare Report" },
+        { "label": "Patient Value", "value": "$450", "source": "ADA Average" },
+        { "label": "Booking Speed", "value": "<1min", "source": "Manifest Internal Data" }
+      ]
+    },
+    {
+      "slug": "real-estate",
+      "name": "Real Estate Agencies",
+      "pain_point": "slow lead response time",
+      "solution": "Instant Lead Qualification Bot",
+      "value_prop": "Engage Zillow leads in under 5 seconds and schedule showings automatically.",
+      "stats": [
+        { "label": "Lead Decay", "value": "21x", "source": "HBR: Speed to Lead" },
+        { "label": "Avg Response", "value": "48hrs", "source": "NAR Member Profile" },
+        { "label": "Commission Risk", "value": "$15k", "source": "Zillow Lost Deal Avg" }
+      ]
+    },
+    {
+      "slug": "legal",
+      "name": "Law Firms",
+      "pain_point": "unqualified client consultations",
+      "solution": "Legal Intake Automation",
+      "value_prop": "Filter out 80% of bad leads before they ever reach your calendar.",
+      "stats": [
+        { "label": "Bad Leads", "value": "60%", "source": "Clio Legal Trends 2025" },
+        { "label": "Billable Hours Lost", "value": "6hrs/wk", "source": "ABA Tech Report" },
+        { "label": "Intake Cost", "value": "-80%", "source": "Manifest Case Study" }
+      ]
+    },
+    {
+      "slug": "ecommerce",
+      "name": "E-commerce Brands",
+      "pain_point": "repetitive support tickets",
+      "solution": "Customer Service AI Agent",
+      "value_prop": "Resolve 70% of 'Where is my order?' tickets instantly, 24/7.",
+      "stats": [
+        { "label": "WISMO Tickets", "value": "40%", "source": "Gorgias Data 2025" },
+        { "label": "Response Time", "value": "Instant", "source": "Manifest AI" },
+        { "label": "CSAT Increase", "value": "+15%", "source": "Zendesk Benchmark" }
+      ]
+    },
+    {
+      "slug": "recruiting",
+      "name": "Recruiting Firms",
+      "pain_point": "screening thousands of resumes",
+      "solution": "AI Candidate Screener",
+      "value_prop": "Match candidates to job descriptions instantly and automate initial outreach.",
+      "stats": [
+        { "label": "Time/Resume", "value": "6s", "source": "Ladders Eye Tracking" },
+        { "label": "Qualified Rate", "value": "12%", "source": "Glassdoor Hiring Stats" },
+        { "label": "Placement Speed", "value": "2x", "source": "Manifest Pilot Data" }
+      ]
+    }
+  ],
+  "locations": [
+    { "slug": "new-york", "name": "New York", "state": "NY" },
+    { "slug": "los-angeles", "name": "Los Angeles", "state": "CA" },
+    { "slug": "chicago", "name": "Chicago", "state": "IL" },
+    { "slug": "houston", "name": "Houston", "state": "TX" },
+    { "slug": "phoenix", "name": "Phoenix", "state": "AZ" },
+    { "slug": "philadelphia", "name": "Philadelphia", "state": "PA" },
+    { "slug": "san-antonio", "name": "San Antonio", "state": "TX" },
+    { "slug": "san-diego", "name": "San Diego", "state": "CA" },
+    { "slug": "dallas", "name": "Dallas", "state": "TX" },
+    { "slug": "san-jose", "name": "San Jose", "state": "CA" },
+    { "slug": "austin", "name": "Austin", "state": "TX" },
+    { "slug": "miami", "name": "Miami", "state": "FL" },
+    { "slug": "seattle", "name": "Seattle", "state": "WA" },
+    { "slug": "denver", "name": "Denver", "state": "CO" },
+    { "slug": "boston", "name": "Boston", "state": "MA" }
+  ]
+}
