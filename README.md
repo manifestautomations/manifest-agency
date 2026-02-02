@@ -25,11 +25,38 @@ Manifest Automations/
 │   ├── trust-ledger.md      # Trust score tracking
 │   └── active-projects.md   # Project registry
 ├── projects/                # All project submodules
-├── templates/               # Project bootstrapping
+├── templates/               # Project bootstrapping & Asset Library
+│   ├── contracts/           # SOWs and Legal Agreements
+│   ├── marketing/           # Case Studies & Positioning
+│   ├── outreach/            # Email Sequences
+│   ├── reporting/           # Weekly Status Reports
+│   ├── team/                # Wins Tracker & Culture
+│   ├── website/             # Copy & Landing Pages
+│   └── new-project/         # Project Scaffold
 ├── prompts/                 # Generated prompt library
 ├── CLAUDE.md                # Agency conventions
 └── README.md                # This file
 ```
+
+## Template Library
+
+We maintain a library of standardized assets to ensure consistency and speed.
+
+### 📜 Contracts & Legal (`templates/contracts/`)
+- **Discovery SOW**: `SOW-Discovery.md` (Paid roadmapping)
+- **Implementation SOW**: `SOW-Implementation.md` (Build phase)
+
+### 📣 Marketing & Sales (`templates/marketing/` & `templates/outreach/`)
+- **Competitor Analysis**: `competitor-analysis.md` (Positioning strategy)
+- **Case Study Template**: `case-study-template.md` (Problem/Solution/Result)
+- **Email Sequences**: `follow-up-sequences.md` (Sales follow-ups)
+
+### 📊 Operations (`templates/reporting/` & `templates/team/`)
+- **Weekly Report**: `weekly-report-template.md` (Status updates)
+- **Wins Tracker**: `wins-tracker.md` (Team morale & milestones)
+
+### 🌐 Website (`templates/website/`)
+- **Landing Page Copy**: `landing-page-copy.md` (Main site content)
 
 ## Trust System
 
