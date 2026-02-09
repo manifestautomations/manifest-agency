@@ -1,0 +1,48 @@
+{
+  "name": "client-onboarding",
+  "version": "1.0.0",
+  "description": "Standardized onboarding for new agency clients",
+  "args": {
+    "projectName": { "type": "string", "description": "Full Client Name" },
+    "slug": { "type": "string", "description": "kebab-case-slug" }
+  },
+  "jobs": [
+    {
+      "id": "scaffold",
+      "name": "Scaffold Project Structure",
+      "run": {
+        "tool": "exec",
+        "args": {
+          "command": "./scripts/scaffold-project.sh \"{{projectName}}\" \"{{slug}}\"",
+          "cwd": "manifest-agency-repo"
+        }
+      }
+    },
+    {
+      "id": "verify",
+      "name": "Verify Files",
+      "depends_on": ["scaffold"],
+      "run": {
+        "tool": "exec",
+        "args": {
+          "command": "test -f projects/{{slug}}/README.md && test -f projects/{{slug}}/.planning/trust-ledger.md",
+          "cwd": "manifest-agency-repo"
+        }
+      }
+    },
+    {
+      "id": "notify",
+      "name": "Notify Discord",
+      "depends_on": ["verify"],
+      "run": {
+        "tool": "exec",
+        "args": {
+          "command": "./scripts/discord-digest.sh",
+          "env": {
+            "DISCORD_WEBHOOK_URL": "{{secrets.DISCORD_WEBHOOK_URL}}"
+          }
+        }
+      }
+    }
+  ]
+}

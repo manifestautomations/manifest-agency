@@ -1,0 +1,13 @@
+{
+  "name": "sales-triage",
+  "version": "1.0.0",
+  "description": "Scripts for enriching and scoring inbound leads",
+  "main": "enrich-leads.js",
+  "scripts": {
+    "enrich": "node enrich-leads.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.1"
+  }
+}

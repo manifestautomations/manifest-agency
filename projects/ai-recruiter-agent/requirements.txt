@@ -1,0 +1,7 @@
+langchain
+langgraph
+langchain-anthropic
+langchain-community
+python-dotenv
+vapi-python-sdk
+supabase

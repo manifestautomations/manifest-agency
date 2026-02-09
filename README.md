@@ -6,34 +6,46 @@ An AI-powered development agency that orchestrates multiple projects through ear
 
 Manifest Automations is a new paradigm for AI-assisted software development. Rather than treating AI as a simple tool, we implement a structured trust system where AI agents earn progressive autonomy through demonstrated competence.
 
-**Core Principles:**
-- **Earned Trust**: Every session starts at zero. Trust is built through successful task completion.
-- **Progressive Autonomy**: As trust grows, so does independence. From read-only to full autonomy.
-- **Auditable Actions**: Every decision is logged, every action is reversible.
-- **Context Preservation**: Knowledge flows between sessions through structured handoffs.
+**Core Offerings:**
+1.  **AI Staffing (Voice Agents):** White-label AI Receptionists, Recruiters, and SDRs.
+2.  **Growth Stack:** Programmatic SEO (pSEO) and Automated Outbound.
+3.  **Custom Development:** AI-native web apps (Next.js, Supabase, Vapi).
 
-## Structure
+## Project Structure
 
 ```
 Manifest Automations/
-├── .claude/                 # Claude Code configuration
-│   ├── commands/            # CLI-style prompt triggers
-│   ├── skills/              # Autonomous workflow engines
-│   │   └── expertise/       # Domain knowledge bases
-│   └── agents/              # Specialized subagent prompts
-├── .planning/               # Agency-level planning
-│   ├── trust-ledger.md      # Trust score tracking
-│   └── active-projects.md   # Project registry
-├── projects/                # All project submodules
-├── templates/               # Project bootstrapping
-├── prompts/                 # Generated prompt library
-├── CLAUDE.md                # Agency conventions
-└── README.md                # This file
+├── commands/            # CLI-style prompt triggers
+├── content/             # Public-facing content (Blogs, Case Studies)
+├── docs/                # Strategy & Architecture (ADRs, Specs)
+├── projects/            # Client Projects & Internal Products
+├── prompts/             # System prompts for AI Agents (Vapi, etc.)
+├── schemas/             # Data models (Knowledge Graph, JSON schemas)
+├── scripts/             # Automation scripts (Outreach, Enrichment)
+├── templates/           # Asset Library (Contracts, Email Sequences)
+├── workflows/           # Lobster automation workflows 🦞
+└── CLAUDE.md            # Agency conventions & Trust System
 ```
+
+## Key Verticals
+
+### 1. AI Staffing (Voice AI)
+-   **Tech Stack:** Vapi.ai (Orchestration), Claude 3.7 (Brain), ElevenLabs (Voice).
+-   **Products:**
+    -   **AI Recruiter:** Autonomous resume screening and phone interviews. [Spec](docs/ai-recruiter-spec.md)
+    -   **AI SDR:** Cold calling and lead qualification. [Spec](docs/ai-sdr-spec.md)
+    -   **AI Receptionist:** 24/7 inbound call handling for SMBs. [Spec](docs/ai-receptionist-spec.md)
+
+### 2. Growth Stack (pSEO + Outbound)
+-   **Tech Stack:** Next.js (SSG), Apollo.io (Enrichment), LangGraph (Agent Logic).
+-   **Products:**
+    -   **pSEO Engine:** Generates 1,000s of "Automated Reporting for [Niche]" pages.
+    -   **Sales Triage:** Enriches inbound leads and drafts personalized outreach.
+    -   **LLM Rank Tracker:** Tracks "Share of Voice" on ChatGPT/Perplexity.
 
 ## Trust System
 
-The agency operates on a 5-level trust model:
+The agency operates on a 5-level trust model defined in `CLAUDE.md`:
 
 | Level | Name | Description |
 |-------|------|-------------|
@@ -43,64 +55,27 @@ The agency operates on a 5-level trust model:
 | 3 | Standard Autonomy | Execute plans with checkpoints |
 | 4 | Full Autonomy | Trusted for complex operations |
 
-See `CLAUDE.md` for detailed criteria and advancement rules.
-
 ## Getting Started
 
 ### For Humans
-
-1. Clone this repository
-2. Review `CLAUDE.md` for conventions
-3. Check `.planning/active-projects.md` for current work
-4. Use `/commands` to trigger workflows
+1.  Clone this repository.
+2.  Review `CLAUDE.md` for conventions.
+3.  Check `STATUS.md` for current agency status.
+4.  Run `npm install` in `scripts/` directories to set up automation tools.
 
 ### For AI Agents
-
-1. Read `CLAUDE.md` completely
-2. Check current trust level in `.planning/trust-ledger.md`
-3. Acknowledge trust level and await instructions
-4. Follow the command -> skill -> agent hierarchy
-
-## Creating a New Project
-
-```bash
-# Copy the template
-cp -r templates/new-project projects/my-project
-
-# Customize the configuration
-# Edit projects/my-project/CLAUDE.md
-# Edit projects/my-project/README.md
-
-# Register the project
-# Add entry to .planning/active-projects.md
-
-# Create initial planning docs
-# projects/my-project/.planning/BRIEF.md
-```
-
-## Workflow Hierarchy
-
-```
-Command (trigger) -> Skill (process) -> Agent (actor)
-
-Example:
-/review-pr -> code-review.md -> reviewer.md
-```
-
-- **Commands**: Lightweight, single-action triggers
-- **Skills**: Multi-step autonomous workflows
-- **Agents**: Specialized personas with domain expertise
+1.  Read `CLAUDE.md` completely.
+2.  Check `HEARTBEAT.md` for current priorities.
+3.  Execute tasks in `PROACTIVE_QUEUE.md`.
+4.  Document all major decisions in `docs/ADR-XXX.md`.
 
 ## Contributing
-
-1. All contributions start at Trust Level 0
-2. Follow the workflow hierarchy
-3. Document everything in `.planning/`
-4. Request review at checkpoints
-5. Earn trust through successful completion
+1.  All contributions start at Trust Level 0.
+2.  Follow the workflow hierarchy.
+3.  Document everything in `docs/`.
+4.  Request review at checkpoints.
 
 ## License
-
 Proprietary - Manifest Automations
 
 ---
