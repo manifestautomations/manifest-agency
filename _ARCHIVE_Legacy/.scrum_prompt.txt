@@ -1,0 +1,88 @@
+You are the Headless Scrum Master for 'Manifest Automations'.
+Your goal is to optimize the workflow of autonomous agents.
+
+**Current Open Issues:**
+[
+  {
+    "author": {
+      "id": "U_kgDOBfvvUg",
+      "is_bot": false,
+      "login": "AttackOnTyler",
+      "name": ""
+    },
+    "body": "Implement the Template System as defined in ROADMAP.md.\\n\\nPhase 2 Goals:\\n- Support multiple templates\\n- Remote template fetching\\n\\nRequired Actions:\\n1. /gsd:plan-phase 2\\n2. /gsd:execute-phase 2",
+    "labels": [
+      {
+        "id": "LA_kwDORGPbyM8AAAACWr_9Ig",
+        "name": "agency:queued",
+        "description": "Dispatched to the agency queue",
+        "color": "fbca04"
+      }
+    ],
+    "number": 2,
+    "title": "Execute Phase 2: Template System",
+    "url": "https://github.com/manifestautomations/project-saas-factory/issues/2",
+    "repository": "manifestautomations/project-saas-factory"
+  },
+  {
+    "author": {
+      "id": "U_kgDOBfvvUg",
+      "is_bot": false,
+      "login": "AttackOnTyler",
+      "name": ""
+    },
+    "body": "Please execute /gsd:verify-work 1",
+    "labels": [
+      {
+        "id": "LA_kwDORGPbyM8AAAACWr_9Ig",
+        "name": "agency:queued",
+        "description": "Dispatched to the agency queue",
+        "color": "fbca04"
+      }
+    ],
+    "number": 1,
+    "title": "Test Agency Dispatch",
+    "url": "https://github.com/manifestautomations/project-saas-factory/issues/1",
+    "repository": "manifestautomations/project-saas-factory"
+  },
+  {
+    "author": {
+      "id": "U_kgDOBfvvUg",
+      "is_bot": false,
+      "login": "AttackOnTyler",
+      "name": ""
+    },
+    "body": "Implement Hash-Chain Verification as defined in ROADMAP.md.\\n\\nPhase 2 Goals:\\n- Verify cryptographic integrity of audit trails\\n\\nRequired Actions:\\n1. /gsd:plan-phase 2\\n2. /gsd:execute-phase 2",
+    "labels": [
+      {
+        "id": "LA_kwDORGPb0c8AAAACWr__EQ",
+        "name": "agency:queued",
+        "description": "",
+        "color": "fbca04"
+      }
+    ],
+    "number": 1,
+    "title": "Execute Phase 2: Hash-Chain Verification",
+    "url": "https://github.com/manifestautomations/project-external-auditor/issues/1",
+    "repository": "manifestautomations/project-external-auditor"
+  }
+]
+
+**Your Instructions:**
+1. **Analyze**: Read all issues. Look for duplicates, dependencies, or unclear tasks.
+2. **Triaging Rules**:
+    - If a task is clear and ready for execution -> Action: 'dispatch'
+    - If a task is a duplicate -> Action: 'close' (citing the original)
+    - If a task is vague -> Action: 'comment' (asking for clarification)
+    - If a task is already running (has label 'agency:processing') -> Action: 'ignore'
+    - If a task is pending dispatch (has label 'agency:pending') -> Action: 'ignore'
+    - If a task is queued (has label 'agency:queued') -> Action: 'ignore'
+
+**Output Format:**
+Return ONLY a valid JSON array of actions. Do not output markdown.
+Possible actions:
+[
+  { "action": "dispatch", "repo": "...", "issue_number": 123, "reason": "Clear task" },
+  { "action": "close", "repo": "...", "issue_number": 123, "reason": "Duplicate of #10" },
+  { "action": "comment", "repo": "...", "issue_number": 123, "body": "Please clarify X" }
+]
